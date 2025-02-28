@@ -123,15 +123,19 @@ public class Model1010802 extends BaseSlotModel implements IRespin {
     }
 
     public int[] getBaseReelSetWeight() {
-        return new int[]{50, 50, 50, 50, 50};
+        return new int[]{75, 30, 35, 25, 140};
     }
 
-    public int[] getFsReelSetWeight() {
-        return new int[]{50, 50, 50, 50, 50};
+    public int[][] getFsReelSetWeight() {
+        return new int[][]{
+                {50, 50, 50, 50, 50},   //3scatter
+                {50, 50, 50, 50, 50},   //4scatter
+                {550, 450, 200, 50, 25}   //5scatter
+        };
     }
 
     public int[] getBaseIncreaseMul() {
-        return new int[]{1, 2, 4, 8, 15, 30, 50};
+        return new int[]{1, 2, 4, 8, 15, 30, 30};
     }
 
     public int[] getFsIncreaseMul() {
@@ -222,6 +226,8 @@ public class Model1010802 extends BaseSlotModel implements IRespin {
         int[] finalSymbols = displaySymbols;
         int lastSpinMul = 1;
         int lastFsMul = 1;
+        //TODO BaseGame simulation use
+        int lastSpinMulLevel = 1;
         List<SlotSpinResult> fsList = gameLogicBean.getSlotFsSpinResults();
         //baseGame和fs中的respin
         if (gameLogicBean.isRespin()) {
@@ -230,6 +236,7 @@ public class Model1010802 extends BaseSlotModel implements IRespin {
                 lastSpinResult = (Model1010802SpinResult) fsList.get(fsList.size() - 1);
             }
             lastSpinMul = lastSpinResult.getRespinNextMul();
+            lastSpinMulLevel = lastSpinResult.getRespinNextMulLevel();
             //fs的上一次乘积存在baseGame spin那次
             if (!isBaseRespin) {
                 lastFsMul = ((Model1010802SpinResult) gameLogicBean.getSlotSpinResult()).getFsNextMul();
@@ -287,7 +294,9 @@ public class Model1010802 extends BaseSlotModel implements IRespin {
             int respinTimes = 0;
             if (hasWin || wildCount > 0) {
                 respinTimes = 1;
-                lastSpinMul = computeNextMul(lastSpinMul, isSlot, isBaseRespin, lastFsMul);
+                lastSpinMul = computeNextMul(lastSpinMul, isSlot, isBaseRespin, lastFsMul, lastSpinMulLevel, result);
+            } else {
+                result.setRespinNextMulLevel(lastSpinMulLevel);
             }
             result.setRespinNextMul(lastSpinMul);
 
@@ -332,12 +341,16 @@ public class Model1010802 extends BaseSlotModel implements IRespin {
             }
             //在baseGame或base Respin的时候触发了fs才会随机进入fs的reels
             if ((isSlot || isBaseRespin) && result.isTriggerFs()) {
-                int randomIndex = RandomUtil.getRandomIndexFromArrayWithWeight(getFsReelSetWeight());
+                int scatterCount = getScatterCount(result);
+                int[] fsReelsWeight = getFsReelSetWeight()[scatterCount - 3];
+                int randomIndex = RandomUtil.getRandomIndexFromArrayWithWeight(fsReelsWeight);
                 int fsReelsType = randomIndex + 1;
                 if (isSlot) {
                     result.setFsReelsType(fsReelsType);
+                    result.setTriggerFsScatterCount(scatterCount);
                 } else if (isBaseRespin) {
                     ((Model1010802SpinResult) gameLogicBean.getSlotSpinResult()).setFsReelsType(fsReelsType);
+                    ((Model1010802SpinResult) gameLogicBean.getSlotSpinResult()).setTriggerFsScatterCount(scatterCount);
                 }
             }
 
@@ -377,6 +390,23 @@ public class Model1010802 extends BaseSlotModel implements IRespin {
         }
 
         return result;
+    }
+
+    protected int getScatterCount(Model1010802SpinResult result) {
+        int scatterCount = 0;
+        if (result != null) {
+            int[] hitSymbol = result.getHitSlotSymbols();
+            int[] hitSymbolCount = result.getHitSlotSymbolCount();
+            if (hitSymbol != null && hitSymbol.length > 0) {
+                for (int i = 0; i < hitSymbol.length; i++) {
+                    if (hitSymbol[i] == SCATTER_SYMBOL) {
+                        scatterCount = hitSymbolCount[i];
+                        break;
+                    }
+                }
+            }
+        }
+        return scatterCount;
     }
 
     protected SlotSymbolHitResult setHitResult(SlotGameLogicBean gameLogicBean, SlotSymbol symbol, int symbolNumber, long line, long betPerLine, int[] hitPosition, int hitCount, boolean inSlot) {
@@ -423,16 +453,23 @@ public class Model1010802 extends BaseSlotModel implements IRespin {
      * @param isSlot
      * @param isBaseRespin
      * @param lastFsMul
+     * @param result
      * @return
      */
-    private int computeNextMul(int lastMul, boolean isSlot, boolean isBaseRespin, int lastFsMul) {
+    private int computeNextMul(int lastMul, boolean isSlot, boolean isBaseRespin, int lastFsMul, int lastSpinMulLevel, Model1010802SpinResult result) {
         if (isSlot || isBaseRespin) {
-            for (int mul : getBaseIncreaseMul()) {
-                if (lastMul < mul) {
-                    lastMul = mul;
+            for (int i = 0; i < getBaseIncreaseMul().length; i++) {
+                //上一次的乘积小于增加的乘积就会取下一个
+                if (lastMul < getBaseIncreaseMul()[i]) {
+                    lastMul = getBaseIncreaseMul()[i];
+                    lastSpinMulLevel++;
+                    break;
+                } else if (i >= getBaseIncreaseMul().length - 1 && lastSpinMulLevel < getBaseIncreaseMul().length) {
+                    lastSpinMulLevel++;
                     break;
                 }
             }
+            result.setRespinNextMulLevel(lastSpinMulLevel);
         } else {
             int[] fsMul = getFsIncreaseMul();
             for (int i = 0; i < fsMul.length; i++) {
@@ -515,7 +552,7 @@ public class Model1010802 extends BaseSlotModel implements IRespin {
                         }
                     } else {
                         //整列都没有需要重新按照顺序补齐，不是去随机
-                        for (int j = rowsCount - 1; j >= 0; j--){
+                        for (int j = rowsCount - 1; j >= 0; j--) {
                             int reelsLength = this.currentReels[i].length;
                             respinPositions[i]--;
                             while (respinPositions[i] < 0) {

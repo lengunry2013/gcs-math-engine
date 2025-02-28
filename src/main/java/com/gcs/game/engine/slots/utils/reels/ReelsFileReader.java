@@ -14,7 +14,8 @@ import java.util.Properties;
 @Slf4j
 public class ReelsFileReader {
 
-    public static final boolean IS_REELS_XML_ENCRYPT = true;
+    //public static final boolean IS_REELS_XML_ENCRYPT = true;
+    public static final boolean IS_REELS_XML_ENCRYPT = false;
 
     public static final String path = "reels/";
 

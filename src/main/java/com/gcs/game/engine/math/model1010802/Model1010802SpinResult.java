@@ -12,16 +12,16 @@ public class Model1010802SpinResult extends SlotSpinResult {
 
     private List<Integer> wildPositionsOnReel = null;
 
-    private List<Integer> wildFeatureTypes = null;
-
     private int[] respinPositions = null;
 
     private long collectWild = 0;
     private int fsReelsType = 0;
     //进入respin的乘积
     private int respinNextMul = 1;
+    private int respinNextMulLevel = 1;
     //fs下一次乘积
     private int fsNextMul = 1;
     private boolean isTriggerCollectWild = false;
+    private int triggerFsScatterCount = 0;
 
 }
