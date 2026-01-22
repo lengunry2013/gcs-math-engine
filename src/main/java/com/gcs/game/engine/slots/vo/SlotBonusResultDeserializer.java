@@ -24,16 +24,22 @@ public class SlotBonusResultDeserializer extends JsonDeserializer<SlotBonusResul
         } else if (jNode.findValue("freeSpinsPick") != null) {
             result = objectMapper.treeToValue(jNode, BaseChoiceFSBonusResult.class);
         } else */
-        if (jNode.findValue("fsType") != null) {
+        if (jNode.findValue("fsPick") != null) {
+            result = objectMapper.treeToValue(jNode, SlotChoiceFSBonusResult.class);
+        } else if (jNode.findValue("fsType") != null) {
             result = objectMapper.treeToValue(jNode, SlotChoice2FsOrPickBonusResult.class);
         } else if (jNode.findValue("pickCharacters") != null && jNode.findValue("pickPays") != null) {
             result = objectMapper.treeToValue(jNode, SlotPickTerminatorBonusResult.class);
         }
-       /* else if (jNode.findValue("freeSpinOrBonusPick") != null) {
+        /*else if (jNode.findValue("freeSpinOrBonusPick") != null) {
             result = objectMapper.treeToValue(jNode, BaseChoiceFsOrMatchBonusResult.class);
-        } else if (jNode.findValue("pickCharacters") != null) {
-            result = objectMapper.treeToValue(jNode, BaseChoiceBonusResult.class);
-        } else if (jNode.findValue("pickRoundFlags") != null) {
+        }
+        */
+        else if (jNode.findValue("pickCharacters") != null) {
+            result = objectMapper.treeToValue(jNode, SlotChoiceBonusResult.class);
+        }
+        /*
+        else if (jNode.findValue("pickRoundFlags") != null) {
             result = objectMapper.treeToValue(jNode, BasePickWithSIPBonusResult.class);
         } else if (jNode.findValue("cardList") != null) {
             result = objectMapper.treeToValue(jNode, BaseHighOrLowBonusResult.class);

@@ -1,6 +1,7 @@
 package com.gcs.game.engine.slots.utils;
 
 import com.gcs.game.engine.GameModelFactory;
+import com.gcs.game.engine.common.cache.GameMathCacheStorage;
 import com.gcs.game.engine.slots.bonus.BaseBonus;
 import com.gcs.game.engine.slots.model.IFsSceneComputer;
 import com.gcs.game.engine.slots.model.BaseSlotModel;
@@ -13,6 +14,7 @@ import com.gcs.game.exception.InvalidPlayerInputException;
 import com.gcs.game.utils.GameConstant;
 import com.gcs.game.vo.BaseGameLogicBean;
 import com.gcs.game.vo.InputInfo;
+import com.gcs.game.vo.MathModels;
 import com.gcs.game.vo.PlayerInputInfo;
 import lombok.extern.slf4j.Slf4j;
 
@@ -41,6 +43,8 @@ public class SlotEngineUtil {
             bean.setSlotFsReelsWeight(reelsBean.getFsReelsWeight());
             bean.setInitSlotReelsPosition(reelsBean.getInitReelsPosition());
 
+            setBetSteps(bean,gameModel);
+
             BaseSlotModel model = getModel(gameModel);
             if (model != null) {
                 bean.setMaxBet(model.maxBetPerLine());
@@ -50,6 +54,16 @@ public class SlotEngineUtil {
             }
         }
         return bean;
+    }
+
+    private static void setBetSteps(SlotGameFeatureVo bean, String gameModel) {
+        Map<String, MathModels> mathModelsCache = GameMathCacheStorage.getInstance().getMathModelsCache();
+        if (mathModelsCache != null && !mathModelsCache.isEmpty()) {
+            MathModels mathModel = mathModelsCache.get(gameModel);
+            if (mathModel != null) {
+                bean.setBetSteps(mathModel.getBetSteps());
+            }
+        }
     }
 
     public static SlotGameFeatureVo initModelFeature(String gameModel, int payback, List<String> otherReelsKeys) {
@@ -64,6 +78,8 @@ public class SlotEngineUtil {
 
             bean.setOtherSlotReelsMap(reelsBean.getOtherReelsMap());
             bean.setOtherSlotReelsWeightMap(reelsBean.getOtherReelsWeightMap());
+
+            setBetSteps(bean,gameModel);
 
             BaseSlotModel model = getModel(gameModel);
             if (model != null) {

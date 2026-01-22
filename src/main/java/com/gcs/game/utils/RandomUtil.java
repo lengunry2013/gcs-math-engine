@@ -1,11 +1,25 @@
 package com.gcs.game.utils;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+@Slf4j
 public class RandomUtil {
+    static JacobRng RNG;
+    public static long randomCount = 0;
+    public static final int randomMaxClose = 100000;
+
+    static {
+        try {
+            RNG = new JacobRng();
+        } catch (Exception e) {
+            log.error("RandomUtil.static..new jacob error:{}", e.getMessage());
+        }
+    }
 
     /**
      * get random number.
@@ -14,9 +28,27 @@ public class RandomUtil {
      * @return
      */
     public static int getRandomInt(int max) {
+        //add dll random before 2026-01-08
+        try {
+            randomCount++;
+            int randomIndex = (int) RNG.computeRandom(max);
+            if (randomCount % randomMaxClose == 0) {
+                RNG.close();
+                randomCount = 0;
+            }
+            return randomIndex;
+        } catch (Exception e) {
+            System.out.println("RandomUtil.getRandomInt()..error！");
+            log.error("RandomUtil.getRandomInt():{}", e.getMessage());
+        }
+        //add dll random end 2026-01-08
         SecureRandom random = new SecureRandom();
         return random.nextInt(max);
-        // return (int) (random.nextDouble() * max);
+    }
+
+    public static int getInternalRandom(int max) {
+        SecureRandom random = new SecureRandom();
+        return random.nextInt(max);
     }
 
     /**

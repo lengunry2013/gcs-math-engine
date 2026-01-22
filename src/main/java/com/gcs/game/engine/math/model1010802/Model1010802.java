@@ -8,6 +8,7 @@ import com.gcs.game.engine.slots.vo.*;
 import com.gcs.game.utils.RandomUtil;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -292,6 +293,7 @@ public class Model1010802 extends BaseSlotModel implements IRespin {
             List<Integer> wildPositionsOnReel = computeWildPosition(finalSymbols);
             int wildCount = wildPositionsOnReel.size();
             int respinTimes = 0;
+            //赢的计算下次spin Mul和fs spin mul
             if (hasWin || wildCount > 0) {
                 respinTimes = 1;
                 lastSpinMul = computeNextMul(lastSpinMul, isSlot, isBaseRespin, lastFsMul, lastSpinMulLevel, result);
@@ -299,7 +301,6 @@ public class Model1010802 extends BaseSlotModel implements IRespin {
                 result.setRespinNextMulLevel(lastSpinMulLevel);
             }
             result.setRespinNextMul(lastSpinMul);
-
             //collect wild
             boolean isCollectTriggerFs = false;
             //只有fs才会收集wild
@@ -325,6 +326,15 @@ public class Model1010802 extends BaseSlotModel implements IRespin {
                 baseSpinResult.setCollectWild(wildCollectCount);
             }
             result.setTriggerCollectWild(isCollectTriggerFs);
+            //赢的计算下次spin Mul和fs spin mul
+            /*if (hasWin || wildCount > 0) {
+                respinTimes = 1;
+                lastSpinMul = computeNextMul(lastSpinMul, isSlot, isBaseRespin, lastFsMul, lastSpinMulLevel, result);
+            } else {
+                result.setRespinNextMulLevel(lastSpinMulLevel);
+            }
+            result.setRespinNextMul(lastSpinMul);
+             */
 
             //只有在fs中会发生
             if (isCollectTriggerFs) {
@@ -365,7 +375,8 @@ public class Model1010802 extends BaseSlotModel implements IRespin {
                 if (hitList != null && !hitList.isEmpty()) {
                     for (SlotSymbolHitResult hit : hitList) {
                         int[] hitPositions = hit.getHitPosition();
-                        if (hitPositions != null) {
+                        int hitSymbol = hit.getHitSymbol();
+                        if (hitPositions != null && hitSymbol != SCATTER_SYMBOL) {
                             for (int position : hitPositions) {
                                 //如果赢的位置将被移除，重新替换新的symbol
                                 if (remainPositions.contains(position - 1)) {
@@ -375,7 +386,7 @@ public class Model1010802 extends BaseSlotModel implements IRespin {
                         }
                     }
                 }
-                List<Integer> wildRemovePosition = computeWildRemovePosition(wildPositionsOnReel, displaySymbols, hasWin);
+                List<Integer> wildRemovePosition = computeWildRemovePosition(wildPositionsOnReel, finalSymbols, hitList);
                 if (wildRemovePosition != null && !wildRemovePosition.isEmpty()) {
                     for (int position : wildRemovePosition) {
                         //如果wild周围的位置将被移除，重新替换新的symbol
@@ -390,6 +401,33 @@ public class Model1010802 extends BaseSlotModel implements IRespin {
         }
 
         return result;
+    }
+
+    protected List<SlotSymbolHitResult> computeSymbols(SlotGameLogicBean gameLogicBean, int[] displaySymbols, Map<Integer, int[]> payLinesMap, boolean isSlot) {
+        long betPerLine = gameLogicBean.getBet();
+        long lines = gameLogicBean.getLines();
+        long totalBet = gameLogicBean.getSumBetCredit();
+        List<SlotSymbolHitResult> hitList = new ArrayList<>();
+        List<Integer> wildPosition = computeWildPosition(displaySymbols);
+        int wildCount = wildPosition.size();
+        for (SlotSymbol symbol : symbols) {
+            if (symbol.getSymbolHitType() == SlotEngineConstant.SYMBOL_HIT_TYPE_LINE_LEFT2RIGHT) {
+                List<SlotSymbolHitResult> tempList = computeLineSymbolLeft2Right(gameLogicBean, symbol, displaySymbols, payLinesMap, betPerLine, lines, isSlot);
+                if (tempList != null && !tempList.isEmpty()) {
+                    hitList.addAll(tempList);
+                }
+            }
+            //只有win=0且wild不出现的时候才会触发fs，因为win>或wildCount>0直接触发respin然后scatter保留
+            if (hitList.isEmpty() && wildCount == 0) {
+                if (symbol.getSymbolHitType() == SlotEngineConstant.SYMBOL_HIT_TYPE_SCATTER) {
+                    SlotSymbolHitResult hitResult = computeScatterSymbol(gameLogicBean, symbol, displaySymbols, totalBet, isSlot, false);
+                    if (hitResult != null) {
+                        hitList.add(hitResult);
+                    }
+                }
+            }
+        }
+        return hitList;
     }
 
     protected int getScatterCount(Model1010802SpinResult result) {
@@ -419,7 +457,7 @@ public class Model1010802 extends BaseSlotModel implements IRespin {
         return hitResult;
     }
 
-    private List<Integer> computeWildRemovePosition(List<Integer> wildPositionsOnReel, int[] displaySymbols, boolean hasWin) {
+    private List<Integer> computeWildRemovePosition(List<Integer> wildPositionsOnReel, int[] displaySymbols, List<SlotSymbolHitResult> hitList) {
         List<Integer> removePositions = new ArrayList<>();
         if (wildPositionsOnReel != null && !wildPositionsOnReel.isEmpty()) {
             for (int position : wildPositionsOnReel) {
@@ -427,8 +465,8 @@ public class Model1010802 extends BaseSlotModel implements IRespin {
                 int col = (position - 1) % reelsCount() - 1;  //相当于第2列开始
                 int[] resultPosition = WILD_REMOVE_POSITION[row * 4 + col];
                 for (int temp : resultPosition) {
-                    //scatter位置不会被移除，还有当win=0的时候H1 Symbol也不会被移除
-                    boolean isRemove = isRemoveSymbol(displaySymbols[temp - 1], hasWin);
+                    //scatter位置不会被移除，还有H1 Symbol只要没有在在线上win也不会被移除
+                    boolean isRemove = isRemoveSymbol(displaySymbols[temp - 1], hitList, temp);
                     if (isRemove) {
                         removePositions.add(temp);
                     }
@@ -438,9 +476,22 @@ public class Model1010802 extends BaseSlotModel implements IRespin {
         return removePositions;
     }
 
-    private boolean isRemoveSymbol(int symbol, boolean hasWin) {
-        //scatter位置不会被移除，还有当win=0的时候H1 Symbol也不会被移除
-        if (symbol == SCATTER_SYMBOL || (!hasWin && symbol == H1_SYMBOL)) {
+    private boolean isRemoveSymbol(int symbol, List<SlotSymbolHitResult> hitList, int position) {
+        //scatter位置不会被移除，还有H1 Symbol只要没有在在线上win也不会被移除
+        if (symbol == SCATTER_SYMBOL) {
+            return false;
+        } else if (symbol == H1_SYMBOL) {
+            if (hitList != null && !hitList.isEmpty()) {
+                for (SlotSymbolHitResult hitResult : hitList) {
+                    int[] hitPositions = hitResult.getHitPosition();
+                    //H1 Symbol win在线上被移除
+                    for (int hitPosition : hitPositions) {
+                        if (position == hitPosition) {
+                            return true;
+                        }
+                    }
+                }
+            }
             return false;
         }
         return true;
@@ -631,7 +682,7 @@ public class Model1010802 extends BaseSlotModel implements IRespin {
                     hitResult.setTriggerFsCounts(fsTimes()[hitCount - 3]);
                 } else {
                     // re-trigger fs
-                    hitResult.setTriggerFs(true);
+                        hitResult.setTriggerFs(true);
                     hitResult.setTriggerFsCounts(fsInFsTimes()[hitCount - 2]);
                 }
             }

@@ -16,6 +16,7 @@
         <commons-codec.version>1.15</commons-codec.version>
         <reflections.version>0.10.2</reflections.version>
         <fastjson.version>1.2.70</fastjson.version>
+        <jacob.version>1.21</jacob.version>
     </properties>
     <parent>
         <groupId>org.springframework.boot</groupId>
@@ -61,6 +62,17 @@
             <groupId>com.alibaba</groupId>
             <artifactId>fastjson</artifactId>
             <version>${fastjson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.jacob</groupId>
+            <artifactId>jacob</artifactId>
+            <version>${jacob.version}</version> <!-- 使用你实际安装的版本号 -->
+        </dependency>
+        <dependency>
+            <groupId>org.jetbrains</groupId>
+            <artifactId>annotations</artifactId>
+            <version>26.0.1</version>
+            <scope>compile</scope>
         </dependency>
     </dependencies>
 

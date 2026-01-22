@@ -118,6 +118,63 @@ public class StringUtil {
         return bd1.multiply(bd2).longValue();
     }
 
+    public static int[] list2Array(List<Integer> list) {
+        int[] result = null;
+        if (list != null) {
+            result = new int[list.size()];
+            for (int i = 0; i < list.size(); i++) {
+                result[i] = list.get(i);
+            }
+        }
+        return result;
+    }
+
+    public static List<Long> array2LongList(long[] array) {
+        List<Long> result = null;
+        if (array != null) {
+            result = new ArrayList<>();
+            for (int i = 0; i < array.length; i++) {
+                result.add(array[i]);
+            }
+        }
+        return result;
+    }
+
+    public static long[] list2LongArray(List<Long> list) {
+        long[] result = null;
+        if (list != null) {
+            result = new long[list.size()];
+            for (int i = 0; i < list.size(); i++) {
+                result[i] = list.get(i);
+            }
+        }
+        return result;
+    }
+
+    public static List<Integer> array2IntegerList(int[] array) {
+        List<Integer> result = null;
+        if (array != null) {
+            result = new ArrayList<>();
+            for (int i = 0; i < array.length; i++) {
+                result.add(array[i]);
+            }
+        }
+        return result;
+    }
+
+    public static int getIntIndex(int[] array, int value) {
+        int result = -1;
+        if (array != null) {
+            for (int i = 0; i < array.length; i++) {
+                if (array[i] == value) {
+                    result = i;
+                    break;
+                }
+            }
+        }
+        return result;
+    }
+
     public static void main(String[] args) {
         /*List<MathTypes> list = new ArrayList<>();
         MathTypes mathTypes1 = new MathTypes();

@@ -1152,7 +1152,7 @@ public abstract class BaseSlotModel {
                         SlotSymbolHitResult oldHit = findInList(resultList, hitLine);
                         if (oldHit == null) {
                             resultList.add(hitResult);
-                        } else if (oldHit.getHitPay() < hitResult.getHitPay()) {
+                        } else if (oldHit.getHitPay() <= hitResult.getHitPay()) {
                             resultList.remove(oldHit);
                             resultList.add(hitResult);
                         }

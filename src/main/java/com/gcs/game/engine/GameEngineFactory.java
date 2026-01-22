@@ -2,6 +2,7 @@ package com.gcs.game.engine;
 
 import com.gcs.game.engine.math.model1010802.Model1010802Engine;
 import com.gcs.game.engine.math.model1260130.Model1260130Engine;
+import com.gcs.game.engine.math.model20260201.Model20260201Engine;
 import com.gcs.game.engine.math.model5070530.Model5070530Engine;
 import com.gcs.game.engine.math.model6060630.Model6060630Engine;
 import com.gcs.game.engine.math.model6080630.Model6080630Engine;
@@ -25,6 +26,8 @@ public class GameEngineFactory {
                 return new Model1010802Engine(payback, mmID);
             case "6080630":
                 return new Model6080630Engine(payback, mmID);
+            case "20260201":
+                return new Model20260201Engine(payback, mmID);
             case "6060630":
                 return new Model6060630Engine(payback, mmID);
             case "5070530":

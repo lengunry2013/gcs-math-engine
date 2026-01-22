@@ -5,6 +5,9 @@ import com.gcs.game.engine.keno.model.BaseKenoModel;
 import com.gcs.game.engine.math.model1010802.Model1010802;
 import com.gcs.game.engine.math.model1260130.Model1260130;
 import com.gcs.game.engine.math.model1260130.Model1260130Bonus;
+import com.gcs.game.engine.math.model20260201.Model20260201;
+import com.gcs.game.engine.math.model20260201.Model20260201Bonus;
+import com.gcs.game.engine.math.model20260201.Model20260201FSBonus;
 import com.gcs.game.engine.math.model5070530.Model5070530;
 import com.gcs.game.engine.math.model6060630.Model6060630;
 import com.gcs.game.engine.math.model6060630.Model6060630Bonus;
@@ -96,6 +99,9 @@ public class GameModelFactory {
             case "1010802":
                 model = new Model1010802();
                 break;
+            case "20260201":
+                model = new Model20260201();
+                break;
             default:
                 break;
         }
@@ -107,6 +113,13 @@ public class GameModelFactory {
         switch (gameModel) {
             case "1260130":
                 model = new Model1260130Bonus();
+                break;
+            case "20260201":
+                if ("bonus1".equalsIgnoreCase(bonusAsset)) {
+                    model = new Model20260201FSBonus();
+                } else if ("bonus2".equalsIgnoreCase(bonusAsset)) {
+                    model = new Model20260201Bonus();
+                }
                 break;
             default:
                 break;

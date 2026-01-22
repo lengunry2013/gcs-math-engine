@@ -38,8 +38,9 @@ public abstract class SlotGameEngine implements IGameEngine {
         SlotGameFeature slotGameFeature = new SlotGameFeature();
         slotGameFeature.setMinLine(this.modelFeature.getMinLine());
         slotGameFeature.setMaxLine(this.modelFeature.getMaxLine());
-        slotGameFeature.setMaxBet(this.modelFeature.getMinBet());
+        slotGameFeature.setMinBet(this.modelFeature.getMinBet());
         slotGameFeature.setMaxBet(this.modelFeature.getMaxBet());
+        slotGameFeature.setBetSteps(this.modelFeature.getBetSteps());
         slotGameFeature.setInitSlotReelsPosition(this.modelFeature.getInitSlotReelsPosition());
         slotGameFeature.setSlotReels(this.modelFeature.getSlotReels());
         slotGameFeature.setSlotFsReels(this.modelFeature.getSlotFsReels());

@@ -4,6 +4,7 @@ import com.gcs.game.vo.BaseGameFeature;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.List;
 import java.util.Map;
 
 @Getter
@@ -12,6 +13,8 @@ public class SlotGameFeatureVo extends BaseGameFeature {
     private long minLine = 1;
 
     private long maxLine = 1;
+
+    private List<Long> betSteps = null;
 
     private int[][] slotReels = null;
 

@@ -39,4 +39,15 @@ public class SlotEngineConstant {
     public static final int BOOLEAN_FALSE = 0;
     public static final int BOOLEAN_TRUE = 1;
 
+    //Match Bonus Hit result
+    public static final int H1 = 111;
+    public static final int H2 = 222;
+    public static final int H3 = 333;
+    public static final int H1H2 = 120;
+    public static final int H1H3 = 130;
+    public static final int H2H3 = 230;
+    public static final int H1H2H3 = 123;
+    public static final int BONUS_WIN_PATTER_LEN = 7;
+
+
 }
