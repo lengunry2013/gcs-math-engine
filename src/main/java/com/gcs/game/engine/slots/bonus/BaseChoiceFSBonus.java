@@ -7,6 +7,7 @@ import com.gcs.game.exception.InvalidPlayerInputException;
 import com.gcs.game.utils.GameConstant;
 import com.gcs.game.vo.InputInfo;
 import com.gcs.game.vo.PlayerInputInfo;
+import com.gcs.game.vo.RecoverInfo;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,15 +39,19 @@ public abstract class BaseChoiceFSBonus extends BaseBonus {
         return result;
     }
 
-    public SlotBonusResult computeBonusStart(SlotGameLogicBean gameSessionBean, int payback, InputInfo input) {
+    public SlotBonusResult computeBonusStart(SlotGameLogicBean gameSessionBean, int payback, InputInfo input, RecoverInfo recoverInfo) {
         return computeBonusStart(gameSessionBean, payback);
     }
 
-    public SlotBonusResult computeBonusPick(SlotGameLogicBean gameSessionBean, PlayerInputInfo playerInfo, SlotBonusResult bonus) {
+    public SlotBonusResult computeBonusPick(SlotGameLogicBean gameSessionBean, PlayerInputInfo playerInfo, SlotBonusResult bonus, RecoverInfo recoverInfo) {
         int bonusStatus = GameConstant.SLOT_GAME_BONUS_STATUS_PICK;
         int[] reqPickIndex = null;
         if (playerInfo != null) {
             reqPickIndex = playerInfo.getBonusPickInfos();
+        }
+        if (recoverInfo != null) {
+            int recoverData = Integer.parseInt(recoverInfo.getRecoverData());
+            reqPickIndex = new int[]{recoverData};
         }
         SlotChoiceFSBonusResult result = null;
         int[] freeSpinsPick;
@@ -105,19 +110,22 @@ public abstract class BaseChoiceFSBonus extends BaseBonus {
         return -1;
     }
 
-    public void checkInput4BonusPick(SlotGameLogicBean gameSessionBean, PlayerInputInfo playerInfo, SlotBonusResult bonus) throws InvalidPlayerInputException {
-        int[] reqPickIndex = null;
-        if (playerInfo != null) {
-            reqPickIndex = playerInfo.getBonusPickInfos();
-        }
-        if (reqPickIndex == null || reqPickIndex.length == 0) {
-            throw new InvalidPlayerInputException();
-        }
-        SlotChoiceFSBonusResult bonusTemp = (SlotChoiceFSBonusResult) bonus;
-        int[] freeSpinOrBonusPick = bonusTemp.getFsPick();
+    public void checkInput4BonusPick(SlotGameLogicBean gameSessionBean, PlayerInputInfo playerInfo, SlotBonusResult bonus, RecoverInfo recoverInfo) throws InvalidPlayerInputException {
+        if (recoverInfo == null) {
+            int[] reqPickIndex = null;
+            if (playerInfo != null) {
+                reqPickIndex = playerInfo.getBonusPickInfos();
+            }
+            if (reqPickIndex == null || reqPickIndex.length == 0) {
+                throw new InvalidPlayerInputException();
+            }
 
-        if (reqPickIndex.length != 1 || reqPickIndex[0] < 0 || reqPickIndex[0] >= freeSpinOrBonusPick.length) {
-            throw new InvalidPlayerInputException();
+            SlotChoiceFSBonusResult bonusTemp = (SlotChoiceFSBonusResult) bonus;
+            int[] freeSpinOrBonusPick = bonusTemp.getFsPick();
+
+            if (reqPickIndex.length != 1 || reqPickIndex[0] < 0 || reqPickIndex[0] >= freeSpinOrBonusPick.length) {
+                throw new InvalidPlayerInputException();
+            }
         }
     }
 

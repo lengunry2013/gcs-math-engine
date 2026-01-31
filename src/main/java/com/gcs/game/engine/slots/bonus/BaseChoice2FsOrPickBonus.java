@@ -9,6 +9,7 @@ import com.gcs.game.utils.GameConstant;
 import com.gcs.game.utils.RandomUtil;
 import com.gcs.game.vo.InputInfo;
 import com.gcs.game.vo.PlayerInputInfo;
+import com.gcs.game.vo.RecoverInfo;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -94,11 +95,11 @@ public abstract class BaseChoice2FsOrPickBonus extends BasePickTerminatorBonus {
         return result;
     }
 
-    public SlotBonusResult computeBonusStart(SlotGameLogicBean gameLogicBean, int payback, InputInfo input) {
+    public SlotBonusResult computeBonusStart(SlotGameLogicBean gameLogicBean, int payback, InputInfo input, RecoverInfo recoverInfo) {
         return computeBonusStart(gameLogicBean, payback); // TODO support
     }
 
-    public SlotBonusResult computeBonusPick(SlotGameLogicBean gameLogicBean, PlayerInputInfo playerInfo, SlotBonusResult bonus) {
+    public SlotBonusResult computeBonusPick(SlotGameLogicBean gameLogicBean, PlayerInputInfo playerInfo, SlotBonusResult bonus, RecoverInfo recoverInfo) {
         int bonusStatus = GameConstant.SLOT_GAME_BONUS_STATUS_PICK;
         int[] reqPickIndex = null;
         if (playerInfo != null) {
@@ -195,7 +196,7 @@ public abstract class BaseChoice2FsOrPickBonus extends BasePickTerminatorBonus {
         return result;
     }
 
-    public void checkInput4BonusPick(SlotGameLogicBean gameLogicBean, PlayerInputInfo playerInfo, SlotBonusResult bonus) throws InvalidPlayerInputException {
+    public void checkInput4BonusPick(SlotGameLogicBean gameLogicBean, PlayerInputInfo playerInfo, SlotBonusResult bonus, RecoverInfo recoverInfo) throws InvalidPlayerInputException {
         int[] reqPickIndex = null;
         if (playerInfo != null) {
             reqPickIndex = playerInfo.getBonusPickInfos();

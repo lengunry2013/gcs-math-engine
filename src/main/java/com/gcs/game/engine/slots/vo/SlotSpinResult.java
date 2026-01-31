@@ -52,6 +52,8 @@ public class SlotSpinResult implements Cloneable {
 
     private int spinType = -1;
 
+    private String recoverData = "";
+
     @Override
     public SlotSpinResult clone() throws CloneNotSupportedException {
         SlotSpinResult slotSpinResult = (SlotSpinResult) super.clone();

@@ -10,6 +10,7 @@ import com.gcs.game.exception.InvalidPlayerInputException;
 import com.gcs.game.vo.BaseGameLogicBean;
 import com.gcs.game.vo.InputInfo;
 import com.gcs.game.engine.blackJack.vo.BlackJackGameLogicBean;
+import com.gcs.game.vo.RecoverInfo;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -50,11 +51,11 @@ public abstract class BlackJackGameEngine implements IGameEngine {
         return BlackJackEngineUtil.getDefaultGameLogicData(this.mathModel, this.payback);
     }
 
-    public BlackJackGameLogicBean gameStart(BaseGameLogicBean gameLogicRequest, Map gameLogicMap, InputInfo input) throws InvalidGameStateException, InvalidBetException {
+    public BlackJackGameLogicBean gameStart(BaseGameLogicBean gameLogicRequest, Map gameLogicMap, InputInfo input, RecoverInfo recoverInfo) throws InvalidGameStateException, InvalidBetException {
         return BlackJackEngineUtil.gameStart(gameLogicRequest, gameLogicMap, input, this.gameLogicBean, this.mathModel, this.engineContextMap);
     }
 
-    public BlackJackGameLogicBean gameProgress(BaseGameLogicBean gameLogicRequest, Map gameLogicMap, PlayerInputInfo playerInput, Map engineContextRequest, InputInfo input) throws InvalidPlayerInputException, InvalidGameStateException {
+    public BlackJackGameLogicBean gameProgress(BaseGameLogicBean gameLogicRequest, Map gameLogicMap, PlayerInputInfo playerInput, Map engineContextRequest, InputInfo input, RecoverInfo recoverInfo) throws InvalidPlayerInputException, InvalidGameStateException {
         return BlackJackEngineUtil.gameProgress(gameLogicRequest, gameLogicMap, playerInput, engineContextRequest, input, this.gameLogicBean, this.mathModel, this.engineContextMap);
     }
 

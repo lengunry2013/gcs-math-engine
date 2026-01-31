@@ -5,9 +5,12 @@ import com.gcs.game.engine.slots.model.IWildPositionsChange;
 import com.gcs.game.engine.slots.model.IWildReelsChange;
 import com.gcs.game.engine.slots.utils.SlotEngineConstant;
 import com.gcs.game.engine.slots.vo.*;
+import com.gcs.game.utils.CompressUtil;
 import com.gcs.game.utils.RandomUtil;
 import com.gcs.game.utils.RandomWeightUntil;
 import com.gcs.game.utils.StringUtil;
+import com.gcs.game.vo.InputInfo;
+import com.gcs.game.vo.RecoverInfo;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -136,10 +139,10 @@ public class Model20260201 extends BaseSlotModel implements IWildReelsChange, IW
     };
 
     protected int[] wildMysteryMultiplierWeight(int payback) {
-        int[] result = new int[]{528, 250, 125, 75, 22};
+        int[] result = new int[]{500, 250, 126, 124, 0};
         switch (payback) {
             case 8804:
-                result = new int[]{528, 250, 125, 75, 22};
+                result = new int[]{500, 250, 126, 124, 0};
                 break;
             default:
                 break;
@@ -166,8 +169,9 @@ public class Model20260201 extends BaseSlotModel implements IWildReelsChange, IW
     public SlotSpinResult spinInFreeSpin(SlotGameFeatureVo modelFeatureBean, SlotGameLogicBean gameSessionBean) {
         SlotSpinResult baseSpinResult = null;
         if (modelFeatureBean != null) {
-            int[][] reels = modelFeatureBean.getSlotReels();
-            int[][] reelsWeight = modelFeatureBean.getSlotReelsWeight();
+            int[][] reels = modelFeatureBean.getSlotFsReels();
+            ;
+            int[][] reelsWeight = modelFeatureBean.getSlotFsReelsWeight();
             if (gameSessionBean.getSlotBonusResult() != null) {
                 SlotChoiceFSBonusResult bonus = (SlotChoiceFSBonusResult) gameSessionBean.getSlotBonusResult();
                 int freespinType = bonus.getFsType();
@@ -191,6 +195,50 @@ public class Model20260201 extends BaseSlotModel implements IWildReelsChange, IW
             boolean isSlot = false;
             int[] displaySymbols = getDisplaySymbols(reels, stopPosition);
             baseSpinResult = computeSpin(displaySymbols, stopPosition, gameSessionBean, isSlot);
+        }
+        return baseSpinResult;
+    }
+
+    @Override
+    public SlotSpinResult spinInFreeSpin(SlotGameFeatureVo modelFeatureBean, SlotGameLogicBean gameLogicBean, InputInfo inputFeedBean, RecoverInfo recoverInfo) {
+        SlotSpinResult baseSpinResult = null;
+        if (modelFeatureBean != null) {
+            int[][] reels = modelFeatureBean.getSlotFsReels();
+            int[][] reelsWeight = modelFeatureBean.getSlotFsReelsWeight();
+            if (gameLogicBean.getSlotBonusResult() != null) {
+                SlotChoiceFSBonusResult bonus = (SlotChoiceFSBonusResult) gameLogicBean.getSlotBonusResult();
+                int freespinType = bonus.getFsType();
+                if (freespinType == Model20260201FSBonus.FREE_SPIN_TYPE_PERSISTENT_WILD) {
+                    reels = modelFeatureBean.getSlotFsReels();
+                    reelsWeight = modelFeatureBean.getSlotFsReelsWeight();
+                } else if (freespinType == Model20260201FSBonus.FREE_SPIN_TYPE_TWO_WILD_REELS) {
+                    reels = modelFeatureBean.getOtherSlotReelsMap().get(FREE_SPIN_REELS2_KEY);
+                    reelsWeight = modelFeatureBean.getOtherSlotReelsWeightMap().get(FREE_SPIN_REELS2_KEY);
+                } else if (freespinType == Model20260201FSBonus.FREE_SPIN_TYPE_THREE_SHIFTING_WILD) {
+                    reels = modelFeatureBean.getOtherSlotReelsMap().get(FREE_SPIN_REELS3_KEY);
+                    reelsWeight = modelFeatureBean.getOtherSlotReelsWeightMap().get(FREE_SPIN_REELS3_KEY);
+                }
+            }
+
+            int[] stopPosition = null;
+            if (inputFeedBean != null && inputFeedBean.getInputPosition() != null && inputFeedBean.getInputPosition().size() > 0) {
+                stopPosition = inputFeedBean.getInputPosition().get(0);
+            }
+            if (stopPosition == null || stopPosition.length <= 0) {
+                stopPosition = randomReelStopPosition(reelsWeight);
+            }
+
+            this.currentReels = reels;
+            this.currentReelsWeight = reelsWeight;
+            this.currentStopPosition = stopPosition;
+
+            boolean isSlot = false;
+            int[] displaySymbols = getDisplaySymbols(reels, stopPosition);
+            if (recoverInfo != null) {
+                baseSpinResult = computeSpin(displaySymbols, stopPosition, gameLogicBean, isSlot, recoverInfo);
+            } else {
+                baseSpinResult = computeSpin(displaySymbols, stopPosition, gameLogicBean, isSlot);
+            }
         }
         return baseSpinResult;
     }
@@ -233,8 +281,33 @@ public class Model20260201 extends BaseSlotModel implements IWildReelsChange, IW
         return result;
     }
 
+    @Override
+    public int[] computeWildReels(SlotGameLogicBean gameLogicBean, int[] displaySymbols, boolean isSlot, RecoverInfo recoverInfo) {
+        int[] result = null;
+        if (!isSlot) {
+            if (recoverInfo != null) {
+                if (gameLogicBean.getSlotBonusResult() != null) {
+                    SlotChoiceFSBonusResult bonus = (SlotChoiceFSBonusResult) gameLogicBean.getSlotBonusResult();
+                    int freespinType = bonus.getFsType();
+                    if (freespinType == Model20260201FSBonus.FREE_SPIN_TYPE_TWO_WILD_REELS) {
+                        result = fsRecover(recoverInfo);
+                    }
+                }
+            } else {
+                result = computeWildReels(gameLogicBean, displaySymbols, isSlot);
+            }
+        }
+        return result;
+    }
+
     protected SlotSpinResult computeSpin(int[] displaySymbols, int[] stopPosition, SlotGameLogicBean gameSessionBean, boolean isSlot) {
         SlotSpinResult baseSpinResult = super.computeSpin(displaySymbols, stopPosition, gameSessionBean, isSlot);
+        fsCompute(gameSessionBean, baseSpinResult, stopPosition, isSlot);
+        return baseSpinResult;
+    }
+
+    private void fsCompute(SlotGameLogicBean gameSessionBean, SlotSpinResult baseSpinResult, int[] stopPosition, boolean isSlot) {
+        long recoverData = -1;
         if (!isSlot) {
             if (gameSessionBean.getSlotBonusResult() != null) {
                 SlotChoiceFSBonusResult bonus = (SlotChoiceFSBonusResult) gameSessionBean.getSlotBonusResult();
@@ -260,9 +333,21 @@ public class Model20260201 extends BaseSlotModel implements IWildReelsChange, IW
                         }
                         baseSpinResult.setSlotPay(payAmount);
                     }
+                    recoverData = CompressUtil.compressWith4Bits(stopPosition, StringUtil.array2IntegerList(wildReels));
+                } else {
+                    recoverData = CompressUtil.compressWith4Bits(stopPosition, StringUtil.array2IntegerList(baseSpinResult.getSlotWildPositions()));
                 }
             }
+        } else {
+            //recovery/recall param compress zip INT64(long)
+            recoverData = CompressUtil.compressToLong(stopPosition, baseSpinResult.getBaseGameMul());
         }
+        baseSpinResult.setRecoverData(String.valueOf(recoverData));
+    }
+
+    protected SlotSpinResult computeSpin(int[] displaySymbols, int[] stopPosition, SlotGameLogicBean gameSessionBean, boolean isSlot, RecoverInfo recoverInfo) {
+        SlotSpinResult baseSpinResult = super.computeSpin(displaySymbols, stopPosition, gameSessionBean, isSlot, recoverInfo);
+        fsCompute(gameSessionBean, baseSpinResult, stopPosition, isSlot);
         return baseSpinResult;
     }
 
@@ -467,6 +552,39 @@ public class Model20260201 extends BaseSlotModel implements IWildReelsChange, IW
             }
         }
         return result;
+    }
+
+    @Override
+    public int[] computeWildPositions(SlotGameLogicBean gameLogicBean, int[] displaySymbols, boolean isSlot, RecoverInfo recoverInfo) {
+        int[] result = null;
+        if (!isSlot) {
+            if (recoverInfo != null) {
+                if (gameLogicBean.getSlotBonusResult() != null) {
+                    SlotChoiceFSBonusResult bonus = (SlotChoiceFSBonusResult) gameLogicBean.getSlotBonusResult();
+                    int freespinType = bonus.getFsType();
+                    if (freespinType == Model20260201FSBonus.FREE_SPIN_TYPE_THREE_SHIFTING_WILD ||
+                            freespinType == Model20260201FSBonus.FREE_SPIN_TYPE_PERSISTENT_WILD) {
+                        result = fsRecover(recoverInfo);
+                    }
+                }
+            } else {
+                result = computeWildPositions(gameLogicBean, displaySymbols, isSlot);
+            }
+        }
+        return result;
+    }
+
+    protected int[] fsRecover(RecoverInfo recoverInfo) {
+        if (recoverInfo != null) {
+            long fsRecoverData = Long.parseLong(recoverInfo.getRecoverData());
+            if (fsRecoverData > 0) {
+                int[] fsPosition = new int[reelsCount()];
+                List<Integer> wildPositions = new ArrayList<>();
+                CompressUtil.decompressWith4Bits(fsRecoverData, fsPosition, wildPositions);
+                return StringUtil.list2Array(wildPositions);
+            }
+        }
+        return null;
     }
 
     public int wildSymbolNo() {

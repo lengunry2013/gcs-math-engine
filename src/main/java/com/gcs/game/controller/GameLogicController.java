@@ -11,10 +11,7 @@ import com.gcs.game.engine.GameEngineFactory;
 import com.gcs.game.engine.IGameEngine;
 import com.gcs.game.engine.common.cache.GameMathCacheStorage;
 import com.gcs.game.exception.*;
-import com.gcs.game.vo.BaseGameFeature;
-import com.gcs.game.vo.PlayerInputInfo;
-import com.gcs.game.vo.BaseGameLogicBean;
-import com.gcs.game.vo.InputInfo;
+import com.gcs.game.vo.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -162,7 +159,7 @@ public class GameLogicController {
 
             //game start
             engine.init(gameLogicBean);
-            result = engine.gameStart(gameLogicBean, gameLogicRequest, inputInfo);
+            result = engine.gameStart(gameLogicBean, gameLogicRequest, inputInfo, null);
         } catch (JsonProcessingException e) {
             e.printStackTrace();
             res.put("error", "Invalid Request Json");
@@ -221,7 +218,130 @@ public class GameLogicController {
             InputInfo inputInfo = mapper.convertValue(inputInfoMap, InputInfo.class);
             //game progress
             engine.init(gameLogicBean);
-            result = engine.gameProgress(gameLogicBean, gameLogicRequest, playerInputInfo, engineContextRequest, inputInfo);
+            result = engine.gameProgress(gameLogicBean, gameLogicRequest, playerInputInfo, engineContextRequest, inputInfo, null);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+            res.put("error", "Invalid Request Json");
+            return new ResponseEntity<>(res, HttpStatus.BAD_REQUEST);
+        } catch (JSONException e) {
+            e.printStackTrace();
+            res.put("error", "Invalid Request Json");
+            return new ResponseEntity<>(res, HttpStatus.BAD_REQUEST);
+        } catch (InvalidPlayerInputException e) {
+            e.printStackTrace();
+            res.put("error", "Invalid Player Input");
+            return new ResponseEntity<>(res, HttpStatus.BAD_REQUEST);
+        } catch (InvalidGameStateException e) {
+            e.printStackTrace();
+            res.put("error", "Invalid Game State");
+            return new ResponseEntity<>(res, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        res.put("gameLogicData", result);
+        res.put("engineContextMap", engine.getEngineContext());
+        log.debug("<<< Response Msg: {}", JSON.toJSONString(res, SerializerFeature.WriteMapNullValue));
+        return new ResponseEntity<>(res, HttpStatus.OK);
+    }
+
+    @PostMapping("/api/math-engine/{mmID}/{payback}/game-start-recover")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> gameStartRecover(
+            @RequestHeader(name = "tokenID") String token,
+            @PathVariable("mmID") String mmID, @PathVariable("payback") int payback,
+            @RequestBody JSONObject gameLogicInfo
+    ) throws ServiceOfflineException, AuthenticationFailException {
+        log.debug(">>> Request game-start-recover.");
+        log.debug(">>> token {}", token);
+        log.debug(">>> mmID {}", mmID);
+        log.debug(">>> payback {}", payback);
+        Environment.checkOffline();
+        if (!checkAuthentication(token)) throw new AuthenticationFailException();
+
+        Map<String, Object> res = new TreeMap<>();
+        if (!GameMathCacheStorage.getInstance().isValidMathInfo(mmID, payback)) {
+            res.put("error", "MathModel or Payback Not found.");
+            return new ResponseEntity<>(res, HttpStatus.NOT_FOUND);
+        }
+        BaseGameLogicBean result;
+        IGameEngine engine = GameEngineFactory.getGameEngine(payback, mmID);
+        try {
+            Map gameLogicData = (Map) gameLogicInfo.get("gameLogicData");
+            JSONObject gameSessionBeanJson = null;
+            if (gameLogicData != null) {
+                gameSessionBeanJson = new JSONObject(gameLogicData);
+            }
+            BaseGameLogicBean gameLogicBean = BaseGameLogicBean.deserialize(gameSessionBeanJson);
+            Map gameLogicRequest = (Map) gameLogicInfo.get("gameLogicRequest");
+            Map inputInfoMap = (Map) gameLogicInfo.get("inputInfo");
+            ObjectMapper mapper = new ObjectMapper();
+            InputInfo inputInfo = mapper.convertValue(inputInfoMap, InputInfo.class);
+            //recovery/recall data
+            Map gameRecoverMap = (Map) gameLogicInfo.get("recoverInfo");
+            RecoverInfo recoverInfo = mapper.convertValue(gameRecoverMap, RecoverInfo.class);
+            //game start
+            engine.init(gameLogicBean);
+            result = engine.gameStart(gameLogicBean, gameLogicRequest, inputInfo, recoverInfo);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+            res.put("error", "Invalid Request Json");
+            return new ResponseEntity<>(res, HttpStatus.BAD_REQUEST);
+        } catch (JSONException e) {
+            e.printStackTrace();
+            res.put("error", "Invalid Request Json");
+            return new ResponseEntity<>(res, HttpStatus.BAD_REQUEST);
+        } catch (InvalidBetException e) {
+            e.printStackTrace();
+            res.put("error", "Invalid Bet Update");
+            return new ResponseEntity<>(res, HttpStatus.BAD_REQUEST);
+        } catch (InvalidGameStateException e) {
+            e.printStackTrace();
+            res.put("error", "Invalid Game State");
+            return new ResponseEntity<>(res, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        res.put("gameLogicData", result);
+        res.put("engineContextMap", engine.getEngineContext());
+        log.debug("<<< Response Msg: {}", JSON.toJSONString(res, SerializerFeature.WriteMapNullValue));
+        return new ResponseEntity<>(res, HttpStatus.OK);
+    }
+
+    @PutMapping("/api/math-engine/{mmID}/{payback}/game-process-recover")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> gameProgressRecover(
+            @RequestHeader(name = "tokenID") String token,
+            @PathVariable("mmID") String mmID, @PathVariable("payback") int payback,
+            @RequestBody JSONObject gameLogicInfo
+    ) throws ServiceOfflineException, AuthenticationFailException {
+        log.debug(">>> Request game-process-recover.");
+        log.debug(">>> token {}", token);
+        log.debug(">>> mmID {}", mmID);
+        log.debug(">>> payback {}", payback);
+        Environment.checkOffline();
+        if (!checkAuthentication(token)) throw new AuthenticationFailException();
+
+        Map<String, Object> res = new TreeMap<>();
+        if (!GameMathCacheStorage.getInstance().isValidMathInfo(mmID, payback)) {
+            res.put("error", "MathModel or Payback Not found.");
+            return new ResponseEntity<>(res, HttpStatus.NOT_FOUND);
+        }
+
+        IGameEngine engine = GameEngineFactory.getGameEngine(payback, mmID);
+        BaseGameLogicBean result = null;
+        try {
+            JSONObject gameSessionBeanJson = new JSONObject((Map) gameLogicInfo.get("gameLogicData"));
+            BaseGameLogicBean gameLogicBean = BaseGameLogicBean.deserialize(gameSessionBeanJson);
+            Map gameLogicRequest = (Map) gameLogicInfo.get("gameLogicRequest");
+            Map engineContextRequest = (Map) gameLogicInfo.get("engineContextMap");
+            Map playerInputInfoMap = (Map) gameLogicInfo.get("playerInputInfo");
+            Map inputInfoMap = (Map) gameLogicInfo.get("inputInfo");
+            Map gameRecoverMap = (Map) gameLogicInfo.get("recoverInfo");
+
+            ObjectMapper mapper = new ObjectMapper();
+            PlayerInputInfo playerInputInfo = mapper.convertValue(playerInputInfoMap, PlayerInputInfo.class);
+            InputInfo inputInfo = mapper.convertValue(inputInfoMap, InputInfo.class);
+            //recovery/recall data
+            RecoverInfo recoverInfo = mapper.convertValue(gameRecoverMap, RecoverInfo.class);
+            //game progress
+            engine.init(gameLogicBean);
+            result = engine.gameProgress(gameLogicBean, gameLogicRequest, playerInputInfo, engineContextRequest, inputInfo, recoverInfo);
         } catch (JsonProcessingException e) {
             e.printStackTrace();
             res.put("error", "Invalid Request Json");

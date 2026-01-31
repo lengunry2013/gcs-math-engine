@@ -8,6 +8,7 @@ import com.gcs.game.utils.GameConstant;
 import com.gcs.game.utils.RandomUtil;
 import com.gcs.game.vo.InputInfo;
 import com.gcs.game.vo.PlayerInputInfo;
+import com.gcs.game.vo.RecoverInfo;
 
 public abstract class BasePickTerminatorBonus extends BaseBonus {
 
@@ -113,7 +114,7 @@ public abstract class BasePickTerminatorBonus extends BaseBonus {
         return pickAwards;
     }
 
-    public SlotBonusResult computeBonusStart(SlotGameLogicBean gameLogicBean, int payback, InputInfo input) {
+    public SlotBonusResult computeBonusStart(SlotGameLogicBean gameLogicBean, int payback, InputInfo input, RecoverInfo recoverInfo) {
         return computeBonusStart(gameLogicBean, payback); // TODO support
     }
 
@@ -133,7 +134,7 @@ public abstract class BasePickTerminatorBonus extends BaseBonus {
         return result;
     }
 
-    public SlotBonusResult computeBonusPick(SlotGameLogicBean gameSessionBean, PlayerInputInfo playerInfo, SlotBonusResult bonus) {
+    public SlotBonusResult computeBonusPick(SlotGameLogicBean gameSessionBean, PlayerInputInfo playerInfo, SlotBonusResult bonus, RecoverInfo recoverInfo) {
         int bonusStatus = GameConstant.SLOT_GAME_BONUS_STATUS_PICK;
         int[] reqPickIndex = null;
         if (playerInfo != null) {
@@ -202,7 +203,7 @@ public abstract class BasePickTerminatorBonus extends BaseBonus {
         return result;
     }
 
-    public void checkInput4BonusPick(SlotGameLogicBean gameLogicBean, PlayerInputInfo playerInfo, SlotBonusResult bonus) throws InvalidPlayerInputException {
+    public void checkInput4BonusPick(SlotGameLogicBean gameLogicBean, PlayerInputInfo playerInfo, SlotBonusResult bonus, RecoverInfo recoverInfo) throws InvalidPlayerInputException {
         int[] reqPickIndex = null;
         if (playerInfo != null) {
             reqPickIndex = playerInfo.getBonusPickInfos();

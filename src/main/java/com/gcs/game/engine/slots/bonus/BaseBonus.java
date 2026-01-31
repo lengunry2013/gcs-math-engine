@@ -6,6 +6,7 @@ import com.gcs.game.engine.slots.vo.SlotSpinResult;
 import com.gcs.game.engine.slots.vo.SlotGameLogicBean;
 import com.gcs.game.exception.InvalidPlayerInputException;
 import com.gcs.game.vo.InputInfo;
+import com.gcs.game.vo.RecoverInfo;
 
 public abstract class BaseBonus {
 
@@ -27,16 +28,17 @@ public abstract class BaseBonus {
      * @param payback
      * @return
      */
-    public abstract SlotBonusResult computeBonusStart(SlotGameLogicBean gameLogicBean, int payback, InputInfo input);
+    public abstract SlotBonusResult computeBonusStart(SlotGameLogicBean gameLogicBean, int payback, InputInfo input, RecoverInfo recoverInfo);
 
     /**
      * bonus pick.
      *
      * @param playerInfo
      * @param bonus
+     * @param recoverInfo
      * @return
      */
-    public abstract SlotBonusResult computeBonusPick(SlotGameLogicBean gameLogicBean, PlayerInputInfo playerInfo, SlotBonusResult bonus);
+    public abstract SlotBonusResult computeBonusPick(SlotGameLogicBean gameLogicBean, PlayerInputInfo playerInfo, SlotBonusResult bonus, RecoverInfo recoverInfo);
 
     /**
      * get hit symbol count.
@@ -85,8 +87,7 @@ public abstract class BaseBonus {
         return result;
     }
 
-    public void checkInput4BonusPick(SlotGameLogicBean gameLogicBean, PlayerInputInfo playerInfo, SlotBonusResult bonus) throws InvalidPlayerInputException {
+    public void checkInput4BonusPick(SlotGameLogicBean gameLogicBean, PlayerInputInfo playerInfo, SlotBonusResult bonus, RecoverInfo recoverInfo) throws InvalidPlayerInputException {
 
     }
-
 }

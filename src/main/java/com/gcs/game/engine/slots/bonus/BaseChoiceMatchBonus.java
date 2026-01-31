@@ -11,6 +11,7 @@ import com.gcs.game.utils.RandomUtil;
 import com.gcs.game.utils.StringUtil;
 import com.gcs.game.vo.InputInfo;
 import com.gcs.game.vo.PlayerInputInfo;
+import com.gcs.game.vo.RecoverInfo;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -67,7 +68,7 @@ public abstract class BaseChoiceMatchBonus extends BaseBonus {
         for (int i = 0; i < displayCharCount; i++) {
             pickCharacters[i] = allCharacters[randomIndex[i]];
         }*/
-        int wildCharacter = getWildCharacter();
+        //int wildCharacter = getWildCharacter();
         int[] awardWeights = getPickAwardWeight();
         int randomIndex = RandomUtil.getRandomIndexFromArrayWithWeight(awardWeights);
         int bonusMultiplier = getBonusMultiplier()[randomIndex];
@@ -90,8 +91,7 @@ public abstract class BaseChoiceMatchBonus extends BaseBonus {
         return result;
     }
 
-
-    public SlotBonusResult computeBonusStart(SlotGameLogicBean gameSessionBean, int payback, InputInfo input) {
+    public SlotBonusResult computeBonusStart(SlotGameLogicBean gameSessionBean, int payback, InputInfo input, RecoverInfo recoverInfo) {
         SlotChoiceBonusResult result = new SlotChoiceBonusResult();
         int count = getCharactersCount();
         int displayCharCount = getDisplayCharactersCount();
@@ -115,6 +115,13 @@ public abstract class BaseChoiceMatchBonus extends BaseBonus {
         String bonusWinPattern = "";
 
         int bonusMultiplier = 1;
+        int[] allCharacters = getAllCharacters();
+        if (recoverInfo != null) {
+            bonusWinPattern = recoverInfo.getRecoverData();
+            bonusMultiplier = Integer.parseInt(bonusWinPattern.substring(3, 4));
+            input = new InputInfo();
+            input.setPickCharacters(BonusCharactersUtil.getCharactersResult(bonusWinPattern, allCharacters));
+        }
         if (input != null && input.getPickCharacters() != null && input.getPickCharacters().length == displayCharCount) {
             pickCharacters = input.getPickCharacters();
             for (int i = 0; i < pickCharacters.length; i++) {
@@ -124,7 +131,6 @@ public abstract class BaseChoiceMatchBonus extends BaseBonus {
                 }
             }
         } else {
-            int[] allCharacters = getAllCharacters();
            /* int[] randomIndex = RandomUtil.getRandomIndex(displayCharCount);
             for (int i = 0; i < displayCharCount; i++) {
                 pickCharacters[i] = allCharacters[randomIndex[i]];
@@ -155,11 +161,22 @@ public abstract class BaseChoiceMatchBonus extends BaseBonus {
 
     }
 
-    public SlotBonusResult computeBonusPick(SlotGameLogicBean gameSessionBean, PlayerInputInfo playerInfo, SlotBonusResult bonus) {
+    public SlotBonusResult computeBonusPick(SlotGameLogicBean gameSessionBean, PlayerInputInfo playerInfo, SlotBonusResult bonus, RecoverInfo recoverInfo) {
         int bonusStatus = GameConstant.SLOT_GAME_BONUS_STATUS_PICK;
         int[] reqPickIndex = null;
         if (playerInfo != null) {
             reqPickIndex = playerInfo.getBonusPickInfos();
+        }
+        if (recoverInfo != null) {
+            int recoverData = Integer.parseInt(recoverInfo.getRecoverData());
+            if (reqPickIndex != null) {
+                int[] tempPickIndex = new int[reqPickIndex.length + 1];
+                System.arraycopy(reqPickIndex, 0, tempPickIndex, 0, reqPickIndex.length);
+                tempPickIndex[reqPickIndex.length] = recoverData;
+                reqPickIndex = tempPickIndex.clone();
+            } else {
+                reqPickIndex = new int[]{recoverData};
+            }
         }
         SlotChoiceBonusResult result = null;
         long[] charactersAwards = null;
@@ -305,18 +322,20 @@ public abstract class BaseChoiceMatchBonus extends BaseBonus {
         return result;
     }
 
-    public void checkInput4BonusPick(SlotGameLogicBean gameSessionBean, PlayerInputInfo playerInfo, SlotBonusResult bonus) throws InvalidPlayerInputException {
-        int[] reqPickIndex = null;
-        if (playerInfo != null) {
-            reqPickIndex = playerInfo.getBonusPickInfos();
-        }
-        if (reqPickIndex == null || reqPickIndex.length == 0) {
-            throw new InvalidPlayerInputException();
-        }
-        int count = getDisplayCharactersCount();
-        for (int i = 0; i < reqPickIndex.length; i++) {
-            if (reqPickIndex[i] < 0 || reqPickIndex[i] >= count) {
+    public void checkInput4BonusPick(SlotGameLogicBean gameSessionBean, PlayerInputInfo playerInfo, SlotBonusResult bonus, RecoverInfo recoverInfo) throws InvalidPlayerInputException {
+        if (recoverInfo == null) {
+            int[] reqPickIndex = null;
+            if (playerInfo != null) {
+                reqPickIndex = playerInfo.getBonusPickInfos();
+            }
+            if (reqPickIndex == null || reqPickIndex.length == 0) {
                 throw new InvalidPlayerInputException();
+            }
+            int count = getDisplayCharactersCount();
+            for (int i = 0; i < reqPickIndex.length; i++) {
+                if (reqPickIndex[i] < 0 || reqPickIndex[i] >= count) {
+                    throw new InvalidPlayerInputException();
+                }
             }
         }
     }

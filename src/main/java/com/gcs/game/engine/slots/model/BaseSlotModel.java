@@ -4,10 +4,12 @@ import com.gcs.game.engine.slots.utils.SlotEngineConstant;
 import com.gcs.game.engine.slots.utils.paylines.PayLinesBean;
 import com.gcs.game.engine.slots.utils.paylines.PayLinesCachePool;
 import com.gcs.game.engine.slots.vo.*;
+import com.gcs.game.utils.CompressUtil;
 import com.gcs.game.utils.RandomUtil;
 import com.gcs.game.utils.RandomWeightUntil;
 import com.gcs.game.utils.StringUtil;
 import com.gcs.game.vo.InputInfo;
+import com.gcs.game.vo.RecoverInfo;
 
 import java.util.*;
 
@@ -171,7 +173,7 @@ public abstract class BaseSlotModel {
      * @param inputFeedBean
      * @return
      */
-    public SlotSpinResult spin(SlotGameFeatureVo modelFeatureBean, SlotGameLogicBean gameLogicBean, InputInfo inputFeedBean) {
+    public SlotSpinResult spin(SlotGameFeatureVo modelFeatureBean, SlotGameLogicBean gameLogicBean, InputInfo inputFeedBean, RecoverInfo recoverInfo) {
         SlotSpinResult baseSpinResult = null;
         if (modelFeatureBean != null) {
             int[][] reels = getReels(modelFeatureBean, gameLogicBean);
@@ -195,9 +197,96 @@ public abstract class BaseSlotModel {
 
             boolean isSlot = true;
             int[] displaySymbols = getDisplaySymbols(reels, stopPosition);
-            baseSpinResult = computeSpin(displaySymbols, stopPosition, gameLogicBean, isSlot);
+            if (recoverInfo != null) {
+                baseSpinResult = computeSpin(displaySymbols, stopPosition, gameLogicBean, isSlot, recoverInfo);
+            } else {
+                baseSpinResult = computeSpin(displaySymbols, stopPosition, gameLogicBean, isSlot);
+            }
         }
         return baseSpinResult;
+    }
+
+    protected SlotSpinResult computeSpin(int[] displaySymbols, int[] stopPosition, SlotGameLogicBean gameLogicBean, boolean isSlot, RecoverInfo recoverInfo) {
+        SlotSpinResult baseSpinResult;
+        Map<Integer, int[]> payLinesMap = getPayLines();
+
+        int[] oldDisplaySymbols = null;
+        int[] wildReels = null;
+        if (this instanceof IWildReelsChange) {
+            oldDisplaySymbols = displaySymbols.clone();
+            if (recoverInfo != null) {
+                wildReels = ((IWildReelsChange) this).computeWildReels(gameLogicBean, displaySymbols, isSlot, recoverInfo);
+            } else {
+                wildReels = ((IWildReelsChange) this).computeWildReels(gameLogicBean, displaySymbols, isSlot);
+            }
+            int wildSymbolNo = ((IWildReelsChange) this).wildSymbolNo();
+            coverDisplaySymbolsByReels(displaySymbols, wildReels, wildSymbolNo);
+        }
+        int[] wildPositions = null;
+        if (this instanceof IWildPositionsChange) {
+            oldDisplaySymbols = displaySymbols.clone();
+            if (recoverInfo != null) {
+                wildPositions = ((IWildPositionsChange) this).computeWildPositions(gameLogicBean, displaySymbols, isSlot, recoverInfo);
+            } else {
+                wildPositions = ((IWildPositionsChange) this).computeWildPositions(gameLogicBean, displaySymbols, isSlot);
+            }
+            int wildSymbolNo = ((IWildPositionsChange) this).wildSymbolNo();
+            coverDisplaySymbolsByPositions(displaySymbols, wildPositions, wildSymbolNo);
+        }
+
+        if (recoverInfo != null) {
+            baseSpinResult = computeSpinResult(stopPosition, displaySymbols, payLinesMap, gameLogicBean, isSlot, recoverInfo);
+        } else {
+            baseSpinResult = computeSpinResult(stopPosition, displaySymbols, payLinesMap, gameLogicBean, isSlot);
+        }
+        if (baseSpinResult != null && wildReels != null) {
+            baseSpinResult.setSlotDisplaySymbols(oldDisplaySymbols); // symbols before over.
+            baseSpinResult.setSlotWildReels(wildReels);
+        }
+        if (baseSpinResult != null && wildPositions != null) {
+            baseSpinResult.setSlotDisplaySymbols(oldDisplaySymbols); // symbols before over.
+            baseSpinResult.setSlotWildPositions(wildPositions);
+        }
+        return baseSpinResult;
+    }
+
+    protected SlotSpinResult computeSpinResult(int[] stopPosition, int[] displaySymbols, Map<Integer, int[]> payLinesMap, SlotGameLogicBean gameLogicBean, boolean isSlot, RecoverInfo recoverInfo) {
+        SlotSpinResult result = new SlotSpinResult();
+        if (this instanceof IRespin && gameLogicBean.isRespin()) {
+            IRespin respin = (IRespin) this;
+            return respin.respin(gameLogicBean, displaySymbols, stopPosition, isSlot);
+        }
+
+        List<SlotSymbolHitResult> hitList = computeSymbols(gameLogicBean, displaySymbols, payLinesMap, isSlot);
+
+        hitList = filterLineHit(hitList);
+        computeLineMultiplier(displaySymbols, hitList, isSlot, gameLogicBean);
+        int baseGameMultiplier = 1;
+        if (recoverInfo != null) {
+            int[] position = new int[reelsCount()];
+            int[] baseMul = new int[1];
+            long recoverData = Long.parseLong(recoverInfo.getRecoverData());
+            CompressUtil.decompressFromLong(recoverData, position, baseMul);
+            baseGameMultiplier = baseMul[0];
+        } else {
+            baseGameMultiplier = computeBaseGameMultiplier(displaySymbols, hitList, isSlot, gameLogicBean);
+        }
+        int freeSpinMultiplier = computeFreeSpinMultiplier(displaySymbols, hitList, isSlot, gameLogicBean);
+
+        result = transferHitList(result, hitList, displaySymbols, stopPosition);
+        if (isSlot) {
+            result.setBaseGameMul(baseGameMultiplier);
+        }
+        if (!isSlot) {
+            result.setFsMul(freeSpinMultiplier);
+        }
+        int respinTimes = 0;
+        if (this instanceof IRespin) {
+            IRespin respin = (IRespin) this;
+            respinTimes = respin.computeRespin(gameLogicBean, displaySymbols, isSlot, result);
+        }
+        computeRespin(result, respinTimes);
+        return result;
     }
 
     protected int[][] getReels(SlotGameFeatureVo modelFeatureBean, SlotGameLogicBean gameLogicBean) {
@@ -243,7 +332,7 @@ public abstract class BaseSlotModel {
         return baseSpinResult;
     }
 
-    public SlotSpinResult spinInFreeSpin(SlotGameFeatureVo modelFeatureBean, SlotGameLogicBean gameLogicBean, InputInfo inputFeedBean) {
+    public SlotSpinResult spinInFreeSpin(SlotGameFeatureVo modelFeatureBean, SlotGameLogicBean gameLogicBean, InputInfo inputFeedBean, RecoverInfo recoverInfo) {
         SlotSpinResult baseSpinResult = null;
         if (modelFeatureBean != null) {
             int[][] reels = getFSReels(modelFeatureBean, gameLogicBean);
@@ -269,7 +358,11 @@ public abstract class BaseSlotModel {
 
             boolean isSlot = false;
             int[] displaySymbols = getDisplaySymbols(reels, stopPosition);
-            baseSpinResult = computeSpin(displaySymbols, stopPosition, gameLogicBean, isSlot);
+            if (recoverInfo != null) {
+                baseSpinResult = computeSpin(displaySymbols, stopPosition, gameLogicBean, isSlot, recoverInfo);
+            } else {
+                baseSpinResult = computeSpin(displaySymbols, stopPosition, gameLogicBean, isSlot);
+            }
         }
         return baseSpinResult;
     }
@@ -1446,4 +1539,7 @@ public abstract class BaseSlotModel {
         return count;
     }
 
+    public int getReelCount() {
+        return reelsCount();
+    }
 }

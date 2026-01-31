@@ -10,6 +10,7 @@ import com.gcs.game.exception.InvalidPlayerInputException;
 import com.gcs.game.vo.BaseGameLogicBean;
 import com.gcs.game.vo.InputInfo;
 import com.gcs.game.vo.PlayerInputInfo;
+import com.gcs.game.vo.RecoverInfo;
 
 import java.util.Map;
 
@@ -45,11 +46,11 @@ public abstract class KenoGameEngine implements IGameEngine {
         return KenoEngineUtil.getDefaultGameLogicData(this.mathModel, this.payback);
     }
 
-    public KenoGameLogicBean gameStart(BaseGameLogicBean gameLogicRequest, Map gameLogicMap, InputInfo input) throws InvalidGameStateException, InvalidBetException {
+    public KenoGameLogicBean gameStart(BaseGameLogicBean gameLogicRequest, Map gameLogicMap, InputInfo input, RecoverInfo recoverInfo) throws InvalidGameStateException, InvalidBetException {
         return KenoEngineUtil.gameStart(gameLogicRequest, gameLogicMap, input, this.gameLogicBean, this.mathModel);
     }
 
-    public KenoGameLogicBean gameProgress(BaseGameLogicBean gameLogicRequest, Map gameLogicMap, PlayerInputInfo playerInput, Map engineContextRequest, InputInfo input) throws InvalidPlayerInputException, InvalidGameStateException {
+    public KenoGameLogicBean gameProgress(BaseGameLogicBean gameLogicRequest, Map gameLogicMap, PlayerInputInfo playerInput, Map engineContextRequest, InputInfo input, RecoverInfo recoverInfo) throws InvalidPlayerInputException, InvalidGameStateException {
         return KenoEngineUtil.gameProgress(gameLogicRequest, gameLogicMap, playerInput, engineContextRequest, input, this.gameLogicBean, this.mathModel);
     }
 

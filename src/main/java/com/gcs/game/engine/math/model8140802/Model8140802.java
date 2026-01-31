@@ -7,6 +7,7 @@ import com.gcs.game.engine.slots.utils.SlotEngineConstant;
 import com.gcs.game.engine.slots.vo.*;
 import com.gcs.game.utils.RandomUtil;
 import com.gcs.game.utils.RandomWeightUntil;
+import com.gcs.game.vo.RecoverInfo;
 
 import java.util.Map;
 
@@ -231,6 +232,11 @@ public class Model8140802 extends BaseSlotModel implements IWildPositionsChange 
             }
         }
         return wildPositions;
+    }
+
+    @Override
+    public int[] computeWildPositions(SlotGameLogicBean gameLogicBean, int[] displaySymbols, boolean isSlot, RecoverInfo recoverInfo) {
+        return new int[0];
     }
 
 }

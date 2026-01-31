@@ -11,6 +11,7 @@ import com.gcs.game.exception.InvalidGameStateException;
 import com.gcs.game.exception.InvalidPlayerInputException;
 import com.gcs.game.vo.BaseGameLogicBean;
 import com.gcs.game.vo.InputInfo;
+import com.gcs.game.vo.RecoverInfo;
 
 import java.util.Map;
 
@@ -73,11 +74,12 @@ public abstract class SlotGameEngine implements IGameEngine {
      *
      * @param gameLogicMap
      * @param input
+     * @param recoverInfo
      * @return
      * @throws InvalidGameStateException
      */
-    public SlotGameLogicBean gameStart(BaseGameLogicBean gameLogicRequest, Map gameLogicMap, InputInfo input) throws InvalidGameStateException, InvalidBetException {
-        return SlotEngineUtil.gameStart(gameLogicRequest, gameLogicMap, input, this.gameLogicBean, this.mathModel, this.modelFeature);
+    public SlotGameLogicBean gameStart(BaseGameLogicBean gameLogicRequest, Map gameLogicMap, InputInfo input, RecoverInfo recoverInfo) throws InvalidGameStateException, InvalidBetException {
+        return SlotEngineUtil.gameStart(gameLogicRequest, gameLogicMap, input, this.gameLogicBean, this.mathModel, this.modelFeature,recoverInfo);
     }
 
     /**
@@ -86,12 +88,13 @@ public abstract class SlotGameEngine implements IGameEngine {
      * @param gameLogicRequest
      * @param playerInput
      * @param input
+     * @param recoverInfo
      * @return
      * @throws InvalidPlayerInputException
      * @throws InvalidGameStateException
      */
-    public SlotGameLogicBean gameProgress(BaseGameLogicBean gameLogicRequest, Map gameLogicMap, PlayerInputInfo playerInput, Map engineContextRequest, InputInfo input) throws InvalidPlayerInputException, InvalidGameStateException {
-        return SlotEngineUtil.gameProgress(gameLogicRequest, playerInput, this.gameLogicBean, this.mathModel, this.modelFeature, payback, input);
+    public SlotGameLogicBean gameProgress(BaseGameLogicBean gameLogicRequest, Map gameLogicMap, PlayerInputInfo playerInput, Map engineContextRequest, InputInfo input, RecoverInfo recoverInfo) throws InvalidPlayerInputException, InvalidGameStateException {
+        return SlotEngineUtil.gameProgress(gameLogicRequest, playerInput, this.gameLogicBean, this.mathModel, this.modelFeature, payback, input,recoverInfo);
     }
 
     public Map getEngineContext() {

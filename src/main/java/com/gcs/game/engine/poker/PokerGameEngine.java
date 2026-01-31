@@ -11,6 +11,7 @@ import com.gcs.game.exception.InvalidPlayerInputException;
 import com.gcs.game.vo.BaseGameLogicBean;
 import com.gcs.game.vo.InputInfo;
 import com.gcs.game.vo.PlayerInputInfo;
+import com.gcs.game.vo.RecoverInfo;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -51,11 +52,11 @@ public abstract class PokerGameEngine implements IGameEngine {
         return PokerEngineUtil.getDefaultGameLogicData(this.mathModel, this.payback);
     }
 
-    public PokerGameLogicBean gameStart(BaseGameLogicBean gameLogicRequest, Map gameLogicMap, InputInfo input) throws InvalidGameStateException, InvalidBetException {
+    public PokerGameLogicBean gameStart(BaseGameLogicBean gameLogicRequest, Map gameLogicMap, InputInfo input, RecoverInfo recoverInfo) throws InvalidGameStateException, InvalidBetException {
         return PokerEngineUtil.gameStart(gameLogicRequest, gameLogicMap, input, this.gameLogicBean, this.mathModel, this.engineContextMap);
     }
 
-    public PokerGameLogicBean gameProgress(BaseGameLogicBean gameLogicRequest, Map gameLogicMap, PlayerInputInfo playerInput, Map engineContextRequest, InputInfo input) throws InvalidPlayerInputException, InvalidGameStateException {
+    public PokerGameLogicBean gameProgress(BaseGameLogicBean gameLogicRequest, Map gameLogicMap, PlayerInputInfo playerInput, Map engineContextRequest, InputInfo input, RecoverInfo recoverInfo) throws InvalidPlayerInputException, InvalidGameStateException {
         return PokerEngineUtil.gameProgress(gameLogicRequest, gameLogicMap, playerInput, engineContextRequest, input, this.gameLogicBean, this.mathModel, this.engineContextMap);
     }
 

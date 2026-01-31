@@ -11,11 +11,9 @@ import com.gcs.game.engine.slots.vo.*;
 import com.gcs.game.exception.InvalidBetException;
 import com.gcs.game.exception.InvalidGameStateException;
 import com.gcs.game.exception.InvalidPlayerInputException;
+import com.gcs.game.utils.CompressUtil;
 import com.gcs.game.utils.GameConstant;
-import com.gcs.game.vo.BaseGameLogicBean;
-import com.gcs.game.vo.InputInfo;
-import com.gcs.game.vo.MathModels;
-import com.gcs.game.vo.PlayerInputInfo;
+import com.gcs.game.vo.*;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -43,7 +41,7 @@ public class SlotEngineUtil {
             bean.setSlotFsReelsWeight(reelsBean.getFsReelsWeight());
             bean.setInitSlotReelsPosition(reelsBean.getInitReelsPosition());
 
-            setBetSteps(bean,gameModel);
+            setBetSteps(bean, gameModel);
 
             BaseSlotModel model = getModel(gameModel);
             if (model != null) {
@@ -79,7 +77,7 @@ public class SlotEngineUtil {
             bean.setOtherSlotReelsMap(reelsBean.getOtherReelsMap());
             bean.setOtherSlotReelsWeightMap(reelsBean.getOtherReelsWeightMap());
 
-            setBetSteps(bean,gameModel);
+            setBetSteps(bean, gameModel);
 
             BaseSlotModel model = getModel(gameModel);
             if (model != null) {
@@ -143,11 +141,12 @@ public class SlotEngineUtil {
      * @param gameLogicCache
      * @param gameModel
      * @param modelFeature
+     * @param recoverInfo
      * @return
      * @throws InvalidGameStateException
      * @throws InvalidBetException
      */
-    public static SlotGameLogicBean gameStart(BaseGameLogicBean gameLogicRequest, Map gameLogicMap, InputInfo input, SlotGameLogicBean gameLogicCache, String gameModel, SlotGameFeatureVo modelFeature) throws InvalidGameStateException, InvalidBetException {
+    public static SlotGameLogicBean gameStart(BaseGameLogicBean gameLogicRequest, Map gameLogicMap, InputInfo input, SlotGameLogicBean gameLogicCache, String gameModel, SlotGameFeatureVo modelFeature, RecoverInfo recoverInfo) throws InvalidGameStateException, InvalidBetException {
         try {
             int gameStatus = gameLogicCache.getGamePlayStatus();
             if (gameStatus == GameConstant.SLOT_GAME_STATUS_IDLE || gameStatus == GameConstant.SLOT_GAME_STATUS_COMPLETE) {
@@ -213,9 +212,11 @@ public class SlotEngineUtil {
                 if (model != null) {
                     checkBetInfo(gameLogicCache, model);
                     SlotSpinResult baseSpinResult;
+                    int reelCount = model.getReelCount();
+                    input = slotBaseGameRecover(input, recoverInfo, reelCount);
                     if (input != null && input.getInputPosition() != null) {
-                        log.debug("spin with input");
-                        baseSpinResult = model.spin(modelFeature, gameLogicCache, input);
+                        log.debug("spin with input or recover");
+                        baseSpinResult = model.spin(modelFeature, gameLogicCache, input, recoverInfo);
                     } else {
                         log.debug("spin");
                         baseSpinResult = model.spin(modelFeature, gameLogicCache);
@@ -257,6 +258,24 @@ public class SlotEngineUtil {
             log.error("", e);
             throw new InvalidGameStateException();
         }
+    }
+
+    private static InputInfo slotBaseGameRecover(InputInfo input, RecoverInfo recoverInfo, int reelCount) {
+        if (recoverInfo != null) {
+            int[] position = new int[reelCount];
+            int[] baseMul = new int[1];
+            long recoverData = Long.parseLong(recoverInfo.getRecoverData());
+            CompressUtil.decompressFromLong(recoverData, position, baseMul);
+            List<int[]> inputPositions = new ArrayList<>();
+            inputPositions.add(position);
+            if (input != null) {
+                input.setInputPosition(inputPositions);
+            } else {
+                input = new InputInfo();
+                input.setInputPosition(inputPositions);
+            }
+        }
+        return input;
     }
 
     protected static void checkBetInfo(SlotGameLogicBean gameLogicCache, BaseSlotModel model) throws InvalidBetException {
@@ -428,11 +447,12 @@ public class SlotEngineUtil {
      * @param modelFeature
      * @param payback
      * @param input
+     * @param recoverInfo
      * @return
      * @throws InvalidPlayerInputException
      * @throws InvalidGameStateException
      */
-    public static SlotGameLogicBean gameProgress(BaseGameLogicBean gameLogicRequest, PlayerInputInfo playerInput, SlotGameLogicBean gameLogicCache, String gameModel, SlotGameFeatureVo modelFeature, int payback, InputInfo input) throws InvalidPlayerInputException, InvalidGameStateException {
+    public static SlotGameLogicBean gameProgress(BaseGameLogicBean gameLogicRequest, PlayerInputInfo playerInput, SlotGameLogicBean gameLogicCache, String gameModel, SlotGameFeatureVo modelFeature, int payback, InputInfo input, RecoverInfo recoverInfo) throws InvalidPlayerInputException, InvalidGameStateException {
         try {
             if (gameLogicCache != null) {
                 if (playerInput != null && gameLogicRequest != null) {
@@ -456,9 +476,9 @@ public class SlotEngineUtil {
                                     || gameLogicCache.getSlotBonusResult().getBonusPlayStatus() == GameConstant.SLOT_GAME_BONUS_STATUS_COMPLETE) {
                                 // start bonus
                                 SlotBonusResult bonusResult;
-                                if (input != null) {
-                                    log.debug("bonus with input");
-                                    bonusResult = bonusModel.computeBonusStart(gameLogicCache, payback, input);
+                                if (input != null || recoverInfo != null) {
+                                    log.debug("bonus with input or recover");
+                                    bonusResult = bonusModel.computeBonusStart(gameLogicCache, payback, input, recoverInfo);
                                 } else {
                                     log.debug("bonus");
                                     bonusResult = bonusModel.computeBonusStart(gameLogicCache, payback);
@@ -470,8 +490,8 @@ public class SlotEngineUtil {
                             } else {
                                 SlotBonusResult bonus = gameLogicCache.getSlotBonusResult();
                                 // check input
-                                bonusModel.checkInput4BonusPick(gameLogicCache, playerInput, bonus);
-                                SlotBonusResult bonusResult = bonusModel.computeBonusPick(gameLogicCache, playerInput, bonus);
+                                bonusModel.checkInput4BonusPick(gameLogicCache, playerInput, bonus, recoverInfo);
+                                SlotBonusResult bonusResult = bonusModel.computeBonusPick(gameLogicCache, playerInput, bonus, recoverInfo);
                                 if (bonusResult != null) {
                                     gameLogicCache.setSlotBonusResult(bonusResult);
                                     if (bonusResult.getBonusPlayStatus() == GameConstant.SLOT_GAME_BONUS_STATUS_COMPLETE) {
@@ -513,7 +533,7 @@ public class SlotEngineUtil {
                             if (fsSize != requestFsSize) {
                                 throw new InvalidGameStateException();
                             }
-                            freeSpinComplete = gameProgress4FreeSpin(gameLogicCache, gameModel, modelFeature, input);
+                            freeSpinComplete = gameProgress4FreeSpin(gameLogicCache, gameModel, modelFeature, input, recoverInfo);
 
                            /* ResponseGamePlayBean progressive = gameLogicCache.getProgressiveInfo();
                             if (progressive != null && progressive.getPendingJackpotID() <= 0) {
@@ -600,7 +620,7 @@ public class SlotEngineUtil {
         return hitFreespinTimes;
     }
 
-    protected static boolean gameProgress4FreeSpin(SlotGameLogicBean gameLogicCache, String gameModel, SlotGameFeatureVo modelFeature, InputInfo input) {
+    protected static boolean gameProgress4FreeSpin(SlotGameLogicBean gameLogicCache, String gameModel, SlotGameFeatureVo modelFeature, InputInfo input, RecoverInfo recoverInfo) {
         boolean freeSpinComplete = false;
         // free spin
         if (gameLogicCache.getRespinCountsLeft() > 0) {
@@ -676,10 +696,11 @@ public class SlotEngineUtil {
             }
         } else */
         if (model != null) {
+            input = slotFsRecover(input, recoverInfo, model.getReelCount());
             SlotSpinResult spinResult;
             if (input != null && input.getInputPosition() != null) {
-                log.debug("Fs spin with input");
-                spinResult = model.spinInFreeSpin(modelFeature, gameLogicCache, input);
+                log.debug("Fs spin with input or recover");
+                spinResult = model.spinInFreeSpin(modelFeature, gameLogicCache, input, recoverInfo);
             } else {
                 log.debug("Fs spin");
                 spinResult = model.spinInFreeSpin(modelFeature, gameLogicCache);
@@ -723,6 +744,24 @@ public class SlotEngineUtil {
         }
         return freeSpinComplete;
 
+    }
+
+    private static InputInfo slotFsRecover(InputInfo input, RecoverInfo recoverInfo, int reelCount) {
+        if (recoverInfo != null) {
+            long fsRecoverData = Long.parseLong(recoverInfo.getRecoverData());
+            int[] fsPosition = new int[reelCount];
+            List<Integer> wildPosition = new ArrayList<>();
+            CompressUtil.decompressWith4Bits(fsRecoverData, fsPosition, wildPosition);
+            List<int[]> inputPositions = new ArrayList<>();
+            inputPositions.add(fsPosition);
+            if (input != null) {
+                input.setInputPosition(inputPositions);
+            } else {
+                input = new InputInfo();
+                input.setInputPosition(inputPositions);
+            }
+        }
+        return input;
     }
 
     protected static boolean computeFreeSpinGame(SlotGameLogicBean gameLogicCache, SlotSpinResult spinResult) {
