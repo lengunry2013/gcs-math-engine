@@ -9,16 +9,32 @@ import java.util.List;
 
 @Slf4j
 public class RandomUtil {
-    static JacobRng RNG;
+    //static JacobRng RNG;
     public static long randomCount = 0;
     public static final int randomMaxClose = 100000;
+    static RNG RNG;
 
     static {
         try {
-            RNG = new JacobRng();
+            //RNG = new JacobRng();
+            RNG = new RNG();
         } catch (Exception e) {
-            log.error("RandomUtil.static..new jacob error:{}", e.getMessage());
+            log.error("RandomUtil.static..new RNG error:{}", e.getMessage());
         }
+    }
+
+
+    public static int getRandomInt(int max) {
+        //add  dll random for JNI before 2026-03-03
+        try {
+            return RNG.getRandomNumber(max, false) - 1;
+        } catch (Exception e) {
+            System.out.println("RandomUtil.getRandomInt()..error！");
+            log.error("RandomUtil.getRandomInt():{}", e.getMessage());
+        }
+        //add dll random end 2026-03-03
+        SecureRandom random = new SecureRandom();
+        return random.nextInt(max);
     }
 
     /**
@@ -27,7 +43,7 @@ public class RandomUtil {
      * @param max
      * @return
      */
-    public static int getRandomInt(int max) {
+    /*public static int getRandomInt(int max) {
         //add dll random before 2026-01-08
         try {
             randomCount++;
@@ -44,7 +60,7 @@ public class RandomUtil {
         //add dll random end 2026-01-08
         SecureRandom random = new SecureRandom();
         return random.nextInt(max);
-    }
+    }*/
 
     public static int getInternalRandom(int max) {
         SecureRandom random = new SecureRandom();

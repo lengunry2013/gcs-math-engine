@@ -118,16 +118,16 @@ public abstract class BaseChoiceMatchBonus extends BaseBonus {
         int[] allCharacters = getAllCharacters();
         if (recoverInfo != null) {
             bonusWinPattern = recoverInfo.getRecoverData();
-            bonusMultiplier = Integer.parseInt(bonusWinPattern.substring(3, 4));
+            //bonusMultiplier = Integer.parseInt(bonusWinPattern.substring(3, 4));
             input = new InputInfo();
             input.setPickCharacters(BonusCharactersUtil.getCharactersResult(bonusWinPattern, allCharacters));
         }
         if (input != null && input.getPickCharacters() != null && input.getPickCharacters().length == displayCharCount) {
             pickCharacters = input.getPickCharacters();
-            for (int i = 0; i < pickCharacters.length; i++) {
-                int pickChar = pickCharacters[i];
+            for (int pickChar : pickCharacters) {
                 if (pickChar > 1000) {
-                    bonusMultiplier *= pickChar % 1000;
+                    int mul = pickChar / 1000;
+                    bonusMultiplier *= mul;
                 }
             }
         } else {
@@ -139,7 +139,6 @@ public abstract class BaseChoiceMatchBonus extends BaseBonus {
             int[] awardWeights = getPickAwardWeight();
             int randomIndex = RandomUtil.getRandomIndexFromArrayWithWeight(awardWeights);
             bonusMultiplier = getBonusMultiplier()[randomIndex];
-            //pickCharacters = BonusCharactersUtil.generateCharacters(randomIndex, bonusMultiplier, allCharacters);
             bonusWinPattern = BonusCharactersUtil.getBonusWinPattern(randomIndex, bonusMultiplier);
             pickCharacters = BonusCharactersUtil.getCharactersResult(bonusWinPattern, allCharacters);
         }
@@ -182,6 +181,7 @@ public abstract class BaseChoiceMatchBonus extends BaseBonus {
         long[] charactersAwards = null;
         int[] pickIndexs = null;
         int[] pickCharacters = null;
+
         int[] charactersCount = null;
         int[] charactersCountWithWild = null;
         int[] hitCharacters = null;

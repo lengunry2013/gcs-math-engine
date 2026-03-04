@@ -263,11 +263,7 @@ public abstract class BaseSlotModel {
         computeLineMultiplier(displaySymbols, hitList, isSlot, gameLogicBean);
         int baseGameMultiplier = 1;
         if (recoverInfo != null) {
-            int[] position = new int[reelsCount()];
-            int[] baseMul = new int[1];
-            long recoverData = Long.parseLong(recoverInfo.getRecoverData());
-            CompressUtil.decompressFromLong(recoverData, position, baseMul);
-            baseGameMultiplier = baseMul[0];
+            baseGameMultiplier = computeBaseGameMultiplier(displaySymbols, hitList, isSlot, gameLogicBean, recoverInfo);
         } else {
             baseGameMultiplier = computeBaseGameMultiplier(displaySymbols, hitList, isSlot, gameLogicBean);
         }
@@ -637,6 +633,28 @@ public abstract class BaseSlotModel {
                 for (SlotSymbolHitResult result : hitList) {
                     long hitPay = result.getHitPay();
                     result.setHitPay(hitPay * baseGameMultiplier);
+                }
+            }
+        }
+        return baseGameMultiplier;
+    }
+
+    protected int computeBaseGameMultiplier(int[] displaySymbols, List<SlotSymbolHitResult> hitList, boolean isSlot, SlotGameLogicBean gameLogicBean, RecoverInfo recoverInfo) {
+        int baseGameMultiplier = 1;
+        if (isSlot) {
+            if (recoverInfo == null) {
+                baseGameMultiplier = computeBaseGameMultiplier(displaySymbols, hitList, isSlot, gameLogicBean);
+            } else {
+                int[] position = new int[reelsCount()];
+                int[] baseMul = new int[1];
+                long recoverData = Long.parseLong(recoverInfo.getRecoverData());
+                CompressUtil.decompressFromLong(recoverData, position, baseMul);
+                baseGameMultiplier = baseMul[0];
+                if (hitList != null && !hitList.isEmpty()) {
+                    for (SlotSymbolHitResult result : hitList) {
+                        long hitPay = result.getHitPay();
+                        result.setHitPay(hitPay * baseGameMultiplier);
+                    }
                 }
             }
         }
