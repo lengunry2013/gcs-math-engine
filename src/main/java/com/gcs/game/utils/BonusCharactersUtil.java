@@ -1,14 +1,22 @@
 package com.gcs.game.utils;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gcs.game.engine.slots.utils.SlotEngineConstant;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.net.URL;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+
 
 @Slf4j
 public class BonusCharactersUtil {
 
-    private static final int[][] H1 = {
+    private static int[][] H1 = {
             {1, 1, 2, 3, 3, 2, 1}, {2, 2, 3, 3, 1, 1, 1}, {3, 1, 3, 2, 1, 1}, {2, 3, 1, 3, 1, 1}, {1, 2, 3, 1, 1}, {3, 3, 2, 1, 1, 1}, {3, 2, 1, 1, 3, 1}, {2, 3, 1, 4, 1}, {2, 1, 3, 1, 1}, {2, 1, 3, 4, 1}, {2, 3, 1, 1, 3, 1}, {1, 1, 2, 2, 1},
             {2, 1, 3, 1, 4}, {1, 1, 3, 2, 1}, {1, 3, 2, 1, 2, 1}, {2, 1, 1, 3, 3, 2, 1}, {3, 2, 4, 1, 1}, {3, 3, 1, 1, 2, 1}, {1, 3, 1, 2, 2, 1}, {3, 2, 3, 1, 2, 1, 1}, {2, 1, 1, 3, 2, 3, 1}, {2, 1, 2, 1, 1}, {1, 1, 2, 3, 1}, {3, 1, 3, 1, 2, 1},
             {1, 3, 1, 3, 1}, {1, 2, 1, 2, 1}, {3, 1, 3, 1, 1}, {3, 2, 1, 1, 3, 2, 1}, {1, 3, 3, 1, 2, 2, 1}, {3, 2, 3, 1, 1, 2, 1}, {2, 1, 2, 1, 3, 1}, {2, 2, 3, 1, 1, 3, 1}, {2, 1, 3, 3, 1, 2, 1}, {1, 3, 3, 1, 2, 1}, {3, 2, 2, 1, 1, 3, 1},
@@ -21,18 +29,20 @@ public class BonusCharactersUtil {
             {3, 2, 1, 1, 2004}, {1, 2, 3, 2004, 1}, {2004, 3, 1, 2, 1}, {2004, 2, 1, 3, 1}, {2004, 3, 2, 1, 1}, {3, 1, 2004, 2, 1}, {3, 2004, 2, 1, 1}, {1, 3, 2004, 2, 1}, {2004, 2, 3, 1, 1}, {1, 1, 3, 2, 2004}, {1, 2004, 2, 3, 1}, {3, 1, 2, 1, 2004}, {1, 2, 2004, 3, 1}, {3, 2, 1, 2004, 1}, {1, 2, 3, 1, 2004}, {2, 1, 2004, 3, 1}, {2, 2004, 3, 1, 1}, {2, 1, 3, 1, 2004}, {2, 1, 3, 2004, 1}, {2004, 1, 3, 2, 1}, {1, 1, 2, 3, 2004}, {1, 2004, 3, 2, 1}, {2, 3, 2004, 1, 1}, {1, 3, 1, 2, 2004}, {2, 1, 1, 3, 2004}, {3, 1, 2, 2004, 1}
     };
 
-    private static final int[][] H2 = {
+    private static int[][] H2 = {
             {4, 3, 1, 2, 2}, {2, 3, 1, 3, 1, 2, 2}, {1, 2, 3, 1, 2, 2}, {2, 3, 1, 2, 2}, {2, 3, 3, 1, 2, 2}, {2, 2, 3, 3, 2}, {1, 2, 2, 3, 2}, {2, 2, 1, 1, 2}, {1, 3, 2, 1, 2, 3, 2}, {2, 1, 2, 3, 2}, {3, 2, 1, 2, 2}, {1, 3, 2, 2, 3, 2}, {2, 3, 1, 1, 3, 2, 2}, {1, 2, 2, 3, 3, 2}, {4, 1, 2, 3, 2}, {2, 3, 1, 4, 2}, {1, 1, 3, 2, 2, 2}, {2, 1, 1, 2, 2}, {3, 2, 3, 2, 2}, {2, 2, 3, 1, 3, 2}, {1, 1, 3, 3, 2, 2, 2}, {1, 2, 4, 3, 2}, {3, 2, 2, 3, 2}, {3, 2, 2, 1, 2}, {1, 3, 4, 2, 2}, {2, 1, 2, 3, 1, 3, 2}, {2, 2, 3, 1, 1, 2}, {3, 2, 2, 1, 1, 3, 2}, {1, 3, 3, 1, 2, 2, 2}, {3, 2, 1, 1, 2, 2}, {3, 3, 2, 1, 2, 1, 2}, {1, 1, 2, 2, 2}, {3, 1, 1, 2, 2, 2}, {1, 2, 3, 2, 4}, {3, 2, 2, 3, 1, 2}, {1, 2, 3, 2, 2}, {2, 3, 2, 1, 1, 3, 2}, {1, 2, 3, 2, 3, 2}, {3, 1, 2, 1, 2, 3, 2}, {2, 3, 2, 1, 3, 1, 2}, {4, 2, 3, 1, 2}, {2, 3, 3, 2, 2}, {3, 1, 2, 2, 2}, {1, 1, 3, 2, 2, 3, 2}, {3, 3, 2, 2, 2}, {2, 1, 2, 1, 3, 2}, {2, 1, 1, 3, 2, 2}, {1, 2, 3, 3, 2, 1, 2}, {2, 2, 3, 3, 1, 2}, {2, 3, 3, 2, 1, 2}, {2, 1, 3, 4, 2}, {2, 3, 2, 3, 2}, {3, 1, 2, 2, 3, 2}, {2, 2, 3, 1, 2}, {2, 1, 2, 3, 3, 1, 2}, {2, 3, 1, 2, 3, 1, 2}, {2, 4, 3, 1, 2}, {1, 1, 2, 2, 3, 2}, {2, 1, 2, 3, 4}, {3, 3, 1, 1, 2, 2, 2}, {2, 2, 1, 3, 3, 1, 2}, {3, 2, 1, 3, 2, 1, 2}, {4, 1, 3, 2, 2}, {2, 1, 3, 3, 2, 1, 2}, {2, 1, 4, 3, 2}, {2, 3, 2, 3, 1, 1, 2}, {3, 1, 2, 3, 2, 2}, {2, 1, 3, 1, 3, 2, 2}, {3, 2, 3, 1, 2, 2}, {2, 1, 3, 2, 4}, {3, 2, 2, 1, 1, 2}, {3, 3, 2, 2, 1, 2}, {1, 4, 3, 2, 2}, {1, 3, 2, 2, 3, 1, 2}, {3, 2, 3, 2, 1, 2}, {3, 4, 2, 1, 2}, {3, 2, 4, 1, 2}, {2, 2, 1, 3, 3, 2}, {2, 4, 1, 3, 2}, {2, 1, 1, 2, 3, 3, 2}, {2, 1, 2, 1, 2}, {2, 3, 1, 2, 3, 2}, {1, 3, 2, 3, 2, 2}, {3, 2, 3, 1, 1, 2, 2}, {3, 3, 1, 2, 2, 2}, {2, 2, 1, 1, 3, 3, 2}, {3, 1, 2, 4, 2}, {3, 3, 1, 2, 2, 1, 2}, {2, 3, 1, 1, 2, 2}, {2, 1, 3, 1, 2, 2}, {2, 1, 3, 2, 2}, {1, 3, 2, 2, 2}, {1, 3, 3, 2, 1, 2, 2}, {1, 2, 2, 1, 2}, {2, 1, 2, 3, 3, 2}, {2, 2, 3, 1, 3, 1, 2}, {2, 2, 1, 3, 1, 2}, {3, 1, 4, 2, 2}, {3, 1, 2, 2, 1, 2}, {1, 3, 1, 2, 2, 2}, {3, 2, 2, 1, 3, 2}, {3, 1, 1, 2, 2, 3, 2}, {2, 2, 3, 1, 1, 3, 2}, {1, 3, 3, 2, 2, 2}, {3, 3, 2, 1, 1, 2, 2}, {3, 3, 2, 2, 1, 1, 2}, {3, 2, 1, 1, 3, 2, 2}, {2, 1, 2, 3, 1, 2}, {1, 3, 2, 2, 4}, {2, 2, 1, 1, 3, 2}, {1, 2, 1, 2, 3, 2}, {2, 1, 3, 2, 3, 2}, {2, 3, 2, 3, 1, 2}, {1, 2, 2, 3, 1, 2}, {2, 1, 3, 3, 2, 2}, {2, 3, 1, 2, 4}, {2, 3, 2, 1, 2}, {3, 1, 2, 2, 3, 1, 2}, {3, 2, 1, 4, 2}, {2, 3, 2, 1, 3, 2}, {1, 3, 2, 3, 2, 1, 2}, {2, 3, 3, 1, 1, 2, 2}, {3, 2, 2, 1, 3, 1, 2}, {1, 3, 1, 2, 3, 2, 2}, {2, 1, 3, 2, 3, 1, 2}, {3, 1, 1, 3, 2, 2, 2}, {3, 1, 2, 2, 1, 3, 2}, {2, 3, 2, 1, 1, 2}, {4, 2, 1, 3, 2}, {1, 3, 2, 2, 1, 2}, {2, 3, 1, 3, 2, 2}, {1, 2, 1, 2, 3, 3, 2}, {3, 2, 1, 3, 2, 2}, {3, 3, 2, 1, 2, 2}, {1, 1, 2, 3, 3, 2, 2}, {2, 3, 4, 1, 2}, {3, 1, 1, 2, 3, 2, 2}, {1, 3, 2, 1, 3, 2, 2}, {3, 2, 1, 2, 4}, {1, 3, 2, 3, 1, 2, 2}, {3, 2, 3, 2, 1, 1, 2}, {2, 1, 3, 2, 1, 3, 2}, {1, 2, 3, 4, 2}, {1, 4, 2, 3, 2}, {1, 2, 3, 3, 2, 2}, {2, 1, 1, 3, 2, 3, 2}, {3, 2, 1, 2, 1, 3, 2}, {1, 2, 1, 2, 2}, {1, 3, 2, 4, 2}, {2, 3, 3, 2, 1, 1, 2}, {2, 1, 2, 1, 3, 3, 2}, {2, 2, 1, 3, 1, 3, 2}, {1, 2, 1, 3, 3, 2, 2}, {1, 2, 2, 1, 3, 3, 2}, {2, 1, 3, 1, 2, 3, 2}, {3, 3, 1, 2, 1, 2, 2}, {2, 3, 1, 2, 1, 3, 2}, {1, 1, 2, 3, 2, 3, 2}, {3, 1, 2, 1, 2, 2}, {1, 2, 2, 3, 1, 3, 2}, {1, 2, 3, 1, 2, 3, 2}, {1, 3, 1, 2, 2, 3, 2}, {1, 3, 2, 2, 1, 3, 2}, {2, 3, 2, 1, 4}, {1, 2, 3, 3, 1, 2, 2}, {2, 2, 3, 3, 1, 1, 2}, {2, 3, 3, 1, 2, 1, 2}, {1, 2, 2, 3, 4}, {2, 3, 1, 2, 1, 2}, {3, 1, 2, 2, 4}, {1, 3, 2, 1, 2, 2}, {3, 1, 2, 1, 3, 2, 2}, {1, 2, 1, 3, 2, 2}, {3, 1, 3, 2, 2, 2}, {2, 1, 1, 3, 3, 2, 2}, {3, 2, 1, 3, 1, 2, 2}, {2, 3, 1, 1, 2, 3, 2}, {3, 1, 2, 3, 2, 1, 2}, {3, 2, 2, 1, 4}, {3, 1, 3, 1, 2, 2, 2}, {1, 3, 3, 2, 2, 1, 2}, {1, 2, 3, 1, 3, 2, 2}, {1, 3, 1, 3, 2, 2, 2}, {1, 2, 3, 2, 1, 3, 2}, {2, 3, 1, 3, 2, 1, 2}, {3, 2, 1, 2, 3, 2}, {1, 1, 2, 3, 2, 2}, {3, 4, 1, 2, 2}, {3, 1, 3, 2, 2, 1, 2}, {1, 2, 3, 2, 1, 2}, {3, 1, 3, 2, 1, 2, 2}, {2, 1, 1, 2, 3, 2}, {3, 1, 2, 3, 1, 2, 2}, {2, 2, 1, 3, 4}, {1, 2, 2, 1, 3, 2}, {3, 2, 1, 1, 2, 3, 2}, {3, 2, 2, 3, 1, 1, 2}, {2, 2, 1, 3, 2}, {4, 3, 2, 1, 2}, {1, 2, 3, 2, 3, 1, 2}, {2, 1, 3, 2, 1, 2}, {3, 2, 3, 1, 2, 1, 2}, {1, 2, 2, 3, 3, 1, 2}, {3, 2, 1, 2, 1, 2}, {1, 1, 3, 2, 3, 2, 2}, {2, 2, 3, 1, 4}, {3, 2, 1, 2, 3, 1, 2}, {1, 2, 1, 3, 2, 3, 2}, {2, 1, 3, 3, 1, 2, 2}, {1, 1, 2, 2, 3, 3, 2}
     };
     private static final int[][] H2_WILD = {
             {2004, 3, 2, 1, 2}, {2004, 2, 1, 3, 2}, {2, 2, 1, 3, 2004}, {2, 3, 2, 1, 2004}, {2, 2004, 3, 1, 2}, {2, 1, 3, 2004, 2}, {1, 2, 3, 2, 2004}, {1, 2, 3, 2004, 2}, {1, 2, 2, 3, 2004}, {2, 1, 3, 2, 2004}, {3, 2, 1, 2, 2004}, {1, 3, 2, 2, 2004}, {1, 2004, 3, 2, 2}, {2, 3, 1, 2004, 2}, {2, 2, 3, 1, 2004}, {2, 3, 2004, 1, 2}, {3, 2004, 2, 1, 2}, {2, 1, 2004, 3, 2}, {1, 2, 2004, 3, 2}, {3, 2, 2, 1, 2004}, {3, 2004, 1, 2, 2}, {3, 1, 2004, 2, 2}, {2, 1, 2, 3, 2004}, {1, 2004, 2, 3, 2}, {2004, 1, 2, 3, 2}, {3, 1, 2, 2004, 2}, {3, 1, 2, 2, 2004}, {3, 2, 2004, 1, 2}, {2004, 2, 3, 1, 2}, {3, 2, 1, 2004, 2}, {2, 3, 1, 2, 2004}, {1, 3, 2004, 2, 2}, {2, 2004, 1, 3, 2}, {1, 3, 2, 2004, 2}, {2004, 1, 3, 2, 2}, {2004, 3, 1, 2, 2}
     };
-    private static final int[][] H3 = {
+    private static int[][] H3 = {
             {1, 3, 3, 1, 3}, {1, 2, 3, 4, 3}, {1, 3, 1, 3, 3}, {2, 3, 2, 1, 1, 3, 3}, {3, 3, 2, 1, 2, 1, 3}, {3, 2, 3, 1, 3}, {3, 2, 3, 2, 1, 1, 3}, {1, 2, 1, 3, 2, 3, 3}, {1, 3, 2, 3, 1, 3}, {2, 2, 3, 3, 3}, {3, 4, 1, 2, 3}, {3, 3, 1, 1, 3}, {1, 3, 2, 2, 3, 1, 3}, {1, 2, 3, 3, 3}, {1, 3, 3, 2, 1, 3}, {1, 1, 3, 3, 2, 3}, {1, 3, 4, 2, 3}, {3, 1, 3, 1, 3}, {3, 1, 2, 3, 3}, {3, 3, 2, 2, 1, 1, 3}, {2, 2, 3, 1, 3, 3}, {1, 3, 3, 2, 3}, {1, 3, 2, 4, 3}, {1, 3, 3, 2, 4}, {3, 2, 2, 1, 3, 3}, {1, 2, 3, 3, 4}, {2, 1, 1, 3, 2, 3, 3}, {2, 3, 2, 3, 3}, {3, 3, 1, 2, 2, 3}, {2, 1, 2, 1, 3, 3, 3}, {2, 2, 1, 1, 3, 3, 3}, {3, 4, 2, 1, 3}, {3, 1, 3, 2, 2, 3}, {1, 2, 4, 3, 3}, {3, 2, 2, 3, 3}, {3, 2, 3, 2, 3}, {3, 3, 2, 1, 1, 3}, {1, 3, 3, 2, 2, 3}, {1, 3, 1, 3, 2, 2, 3}, {3, 1, 2, 4, 3}, {1, 3, 2, 2, 3, 3}, {2, 3, 1, 3, 3}, {3, 1, 3, 2, 2, 1, 3}, {3, 2, 3, 1, 1, 3}, {3, 1, 1, 2, 2, 3, 3}, {2, 4, 3, 1, 3}, {3, 2, 3, 1, 2, 1, 3}, {1, 3, 2, 3, 2, 1, 3}, {2, 1, 4, 3, 3}, {1, 2, 2, 3, 3, 3}, {2, 1, 2, 3, 3, 3}, {3, 1, 3, 2, 1, 2, 3}, {3, 3, 1, 2, 1, 2, 3}, {2, 2, 3, 3, 1, 3}, {1, 3, 2, 3, 2, 3}, {4, 2, 3, 1, 3}, {2, 3, 4, 1, 3}, {2, 3, 3, 2, 3}, {3, 3, 2, 2, 3}, {3, 2, 1, 4, 3}, {3, 1, 1, 3, 3}, {2, 3, 1, 4, 3}, {3, 2, 1, 2, 3, 3}, {3, 2, 1, 3, 3}, {3, 1, 2, 1, 3, 2, 3}, {2, 3, 1, 3, 1, 3}, {3, 1, 2, 3, 1, 3}, {1, 4, 2, 3, 3}, {1, 3, 2, 1, 3, 2, 3}, {3, 2, 3, 1, 2, 3}, {1, 1, 2, 2, 3, 3, 3}, {2, 3, 1, 3, 2, 3}, {1, 3, 1, 2, 2, 3, 3}, {2, 3, 3, 1, 3}, {3, 1, 1, 2, 3, 3}, {2, 3, 1, 3, 2, 1, 3}, {3, 2, 2, 3, 1, 3}, {2, 1, 3, 2, 3, 3}, {1, 2, 2, 1, 3, 3, 3}, {1, 2, 3, 3, 1, 3}, {2, 1, 3, 1, 3, 3}, {3, 3, 1, 1, 2, 3}, {2, 1, 2, 3, 3, 1, 3}, {2, 3, 3, 1, 4}, {1, 2, 3, 2, 3, 3}, {3, 2, 1, 3, 4}, {1, 1, 2, 3, 3, 3}, {3, 1, 1, 3, 2, 2, 3}, {2, 3, 2, 1, 3, 3}, {1, 1, 3, 3, 3}, {3, 2, 3, 1, 4}, {2, 3, 3, 1, 2, 1, 3}, {2, 1, 1, 3, 3, 2, 3}, {3, 1, 2, 1, 3, 3}, {2, 1, 3, 3, 2, 3}, {3, 1, 2, 2, 3, 1, 3}, {1, 2, 2, 3, 3, 1, 3}, {2, 3, 1, 2, 3, 3}, {2, 4, 1, 3, 3}, {3, 2, 1, 2, 1, 3, 3}, {2, 3, 3, 1, 1, 3}, {3, 2, 1, 3, 2, 3}, {3, 3, 1, 2, 1, 3}, {3, 1, 1, 3, 2, 3}, {1, 3, 2, 3, 4}, {1, 3, 2, 1, 3, 3}, {2, 2, 1, 3, 3, 1, 3}, {2, 1, 3, 3, 2, 1, 3}, {1, 3, 1, 2, 3, 3}, {1, 1, 3, 2, 3, 3}, {1, 1, 2, 3, 2, 3, 3}, {4, 2, 1, 3, 3}, {1, 2, 3, 2, 3, 1, 3}, {3, 3, 1, 1, 2, 2, 3}, {2, 3, 2, 3, 1, 3}, {2, 1, 3, 4, 3}, {1, 1, 3, 2, 3, 2, 3}, {1, 2, 1, 3, 3, 3}, {3, 1, 3, 2, 1, 3}, {2, 3, 1, 2, 3, 1, 3}, {2, 2, 1, 3, 3, 3}, {1, 3, 3, 2, 1, 2, 3}, {2, 3, 2, 3, 1, 1, 3}, {3, 3, 2, 1, 3}, {3, 3, 1, 2, 2, 1, 3}, {3, 2, 1, 1, 2, 3, 3}, {2, 1, 3, 1, 3, 2, 3}, {3, 3, 2, 1, 4}, {2, 1, 1, 3, 3, 3}, {2, 1, 3, 3, 3}, {3, 2, 1, 3, 2, 1, 3}, {2, 3, 2, 1, 3, 1, 3}, {2, 3, 1, 3, 4}, {3, 1, 3, 2, 3}, {3, 1, 2, 1, 2, 3, 3}, {1, 2, 1, 2, 3, 3, 3}, {3, 2, 3, 2, 1, 3}, {1, 2, 3, 3, 1, 2, 3}, {2, 1, 2, 3, 1, 3, 3}, {2, 3, 3, 2, 1, 3}, {3, 2, 1, 1, 3, 3}, {2, 2, 3, 1, 1, 3, 3}, {3, 1, 2, 2, 1, 3, 3}, {1, 2, 3, 3, 2, 3}, {1, 1, 3, 3, 2, 2, 3}, {3, 2, 1, 1, 3, 2, 3}, {3, 2, 2, 3, 1, 1, 3}, {2, 3, 1, 1, 3, 3}, {3, 1, 2, 2, 3, 3}, {2, 3, 3, 2, 1, 1, 3}, {1, 3, 3, 1, 2, 2, 3}, {1, 2, 3, 1, 3, 3}, {1, 3, 3, 1, 2, 3}, {2, 1, 3, 3, 4}, {2, 3, 3, 1, 2, 3}, {3, 1, 2, 3, 4}, {2, 1, 3, 3, 1, 2, 3}, {3, 1, 4, 2, 3}, {2, 3, 3, 1, 1, 2, 3}, {3, 1, 2, 3, 2, 3}, {2, 1, 3, 1, 2, 3, 3}, {1, 2, 3, 3, 2, 1, 3}, {3, 1, 2, 3, 2, 1, 3}, {1, 3, 2, 2, 1, 3, 3}, {2, 2, 3, 1, 3, 1, 3}, {4, 1, 2, 3, 3}, {3, 3, 1, 2, 4}, {1, 3, 3, 2, 2, 1, 3}, {2, 3, 1, 1, 3, 2, 3}, {2, 2, 1, 3, 1, 3, 3}, {3, 1, 3, 2, 4}, {2, 3, 1, 3, 1, 2, 3}, {3, 2, 4, 1, 3}, {3, 3, 2, 1, 2, 3}, {2, 1, 3, 2, 1, 3, 3}, {1, 3, 2, 1, 2, 3, 3}, {1, 2, 3, 1, 2, 3, 3}, {1, 3, 2, 3, 3}, {1, 3, 1, 2, 3, 2, 3}, {3, 2, 1, 2, 3, 1, 3}, {3, 1, 3, 1, 2, 3}, {2, 2, 3, 3, 1, 1, 3}, {1, 2, 3, 2, 1, 3, 3}, {3, 2, 1, 3, 1, 3}, {4, 3, 1, 2, 3}, {3, 3, 2, 2, 1, 3}, {2, 3, 1, 1, 2, 3, 3}, {2, 3, 1, 2, 1, 3, 3}, {3, 3, 2, 1, 1, 2, 3}, {1, 2, 2, 3, 1, 3, 3}, {1, 2, 1, 3, 3, 2, 3}, {4, 3, 2, 1, 3}, {3, 1, 1, 2, 3, 2, 3}, {3, 2, 3, 1, 1, 2, 3}, {1, 1, 2, 3, 3, 2, 3}, {1, 1, 3, 2, 2, 3, 3}, {4, 1, 3, 2, 3}, {2, 1, 3, 3, 1, 3}, {3, 2, 2, 1, 3, 1, 3}, {3, 2, 2, 1, 1, 3, 3}, {1, 2, 3, 1, 3, 2, 3}, {1, 4, 3, 2, 3}, {3, 1, 3, 1, 2, 2, 3}, {1, 3, 2, 3, 1, 2, 3}, {2, 1, 1, 2, 3, 3, 3}, {3, 1, 2, 3, 1, 2, 3}, {3, 3, 1, 2, 3}, {2, 1, 3, 2, 3, 1, 3}, {3, 2, 1, 3, 1, 2, 3}, {1, 3, 1, 3, 2, 3}
     };
     private static final int[][] H3_WILD = {
             {2, 3, 3, 1, 2004}, {3, 2004, 1, 2, 3}, {2, 1, 2004, 3, 3}, {3, 1, 3, 2, 2004}, {3, 2, 1, 3, 2004}, {3, 2004, 2, 1, 3}, {3, 2, 3, 1, 2004}, {3, 3, 2, 1, 2004}, {2, 2004, 1, 3, 3}, {2004, 3, 2, 1, 3}, {1, 3, 3, 2, 2004}, {3, 1, 2, 2004, 3}, {2, 2004, 3, 1, 3}, {3, 1, 2, 3, 2004}, {2004, 2, 3, 1, 3}, {2, 1, 3, 2004, 3}, {1, 3, 2, 3, 2004}, {1, 3, 2004, 2, 3}, {1, 3, 2, 2004, 3}, {1, 2, 3, 2004, 3}, {2, 3, 1, 2004, 3}, {1, 2, 2004, 3, 3}, {3, 3, 1, 2, 2004}, {3, 2, 1, 2004, 3}, {2, 3, 1, 3, 2004}, {3, 1, 2004, 2, 3}, {1, 2004, 2, 3, 3}, {1, 2, 3, 3, 2004}, {2, 1, 3, 3, 2004}, {2004, 2, 1, 3, 3}, {2004, 1, 3, 2, 3}, {1, 2004, 3, 2, 3}, {2, 3, 2004, 1, 3}, {2004, 1, 2, 3, 3}, {2004, 3, 1, 2, 3}, {3, 2, 2004, 1, 3}
     };
+    private static int[][] H4 = new int[5514][];
+
     private static final int[][] H12 = {
             {2, 2, 1, 1, 4}, {1, 2, 1, 2, 4}, {1, 2, 1, 3, 2, 4}, {1, 2, 1, 2, 3, 4}, {1, 1, 2, 2, 4}, {1, 1, 3, 2, 2, 4}, {2, 1, 1, 2, 4}, {2, 3, 1, 1, 2, 4}, {1, 3, 2, 2, 1, 4}, {1, 2, 2, 1, 3, 4}, {1, 1, 2, 3, 2, 4}, {2, 2, 3, 1, 1, 4}, {2, 1, 2, 1, 4}, {2, 1, 3, 2, 1, 4}, {2, 3, 1, 2, 1, 4}, {1, 3, 1, 2, 2, 4}, {1, 2, 2, 1, 4}, {1, 2, 3, 1, 2, 4}, {2, 1, 1, 2, 3, 4}, {2, 2, 1, 1, 3, 4}, {2, 3, 2, 1, 1, 4}, {3, 2, 2, 1, 1, 4}, {1, 1, 2, 2, 3, 4}, {3, 1, 1, 2, 2, 4}, {2, 1, 1, 3, 2, 4}, {1, 2, 2, 3, 1, 4}, {2, 1, 2, 1, 3, 4}, {2, 1, 3, 1, 2, 4}, {2, 2, 1, 3, 1, 4}, {3, 2, 1, 1, 2, 4}, {1, 3, 2, 1, 2, 4}, {2, 1, 2, 3, 1, 4}, {3, 1, 2, 2, 1, 4}, {3, 1, 2, 1, 2, 4}, {3, 2, 1, 2, 1, 4}, {1, 2, 3, 2, 1, 4}
     };
@@ -57,8 +67,102 @@ public class BonusCharactersUtil {
     private static final int[][] H123_WILD = {
             {1, 2004, 2, 3, 4}, {2, 3, 1, 2, 3, 1, 2004}, {2, 1, 3, 2004, 4}, {2, 1, 3, 4, 2004}, {2004, 4, 4}, {4, 2004, 4}, {4, 4, 2004}, {2, 3, 1, 2004, 4}, {2, 3, 1, 4, 2004}, {2, 3, 2004, 1, 4}, {2, 3, 4, 1, 2004}, {2, 3, 1, 1, 3, 2, 2004}, {3, 2004, 2, 1, 4}, {3, 4, 2, 1, 2004}, {1, 1, 3, 3, 2, 2, 2004}, {3, 1, 2, 2, 3, 1, 2004}, {1, 2004, 3, 2, 4}, {1, 4, 3, 2, 2004}, {3, 3, 2, 1, 2, 1, 2004}, {2, 1, 2, 3, 1, 3, 2004}, {2, 3, 2, 1, 3, 1, 2004}, {2, 2004, 3, 1, 4}, {2, 4, 3, 1, 2004}, {3, 1, 3, 1, 2, 2, 2004}, {3, 3, 1, 2, 2, 1, 2004}, {2, 3, 1, 1, 2, 3, 2004}, {2, 3, 3, 1, 2, 1, 2004}, {3, 2, 3, 1, 2, 1, 2004}, {2, 1, 3, 2, 1, 3, 2004}, {2, 1, 3, 2, 3, 1, 2004}, {1, 1, 3, 2, 2, 3, 2004}, {3, 2, 2004, 1, 4}, {3, 2, 4, 1, 2004}, {2004, 3, 2, 1, 4}, {4, 3, 2, 1, 2004}, {1, 2, 1, 2, 3, 3, 2004}, {2004, 2, 1, 3, 4}, {4, 2, 1, 3, 2004}, {2, 2, 1, 3, 3, 1, 2004}, {2, 3, 2, 3, 1, 1, 2004}, {2, 3, 2, 1, 1, 3, 2004}, {1, 2, 3, 2004, 4}, {1, 2, 3, 4, 2004}, {1, 2, 1, 3, 3, 2, 2004}, {1, 3, 2, 2, 3, 1, 2004}, {1, 3, 2, 2, 1, 3, 2004}, {2, 1, 2004, 3, 4}, {2, 1, 4, 3, 2004}, {3, 1, 2, 3, 1, 2, 2004}, {3, 1, 3, 2, 2, 1, 2004}, {1, 3, 2, 3, 2, 1, 2004}, {2, 2, 1, 1, 3, 3, 2004}, {2004, 1, 2, 3, 4}, {4, 1, 2, 3, 2004}, {2004, 2, 3, 1, 4}, {4, 2, 3, 1, 2004}, {3, 1, 1, 2, 3, 2, 2004}, {1, 3, 3, 2, 1, 2, 2004}, {1, 3, 3, 2, 2, 1, 2004}, {3, 1, 2, 2004, 4}, {3, 1, 2, 4, 2004}, {1, 2, 2, 3, 1, 3, 2004}, {1, 2, 3, 2, 1, 3, 2004}, {2, 1, 3, 1, 3, 2, 2004}, {1, 2, 3, 1, 3, 2, 2004}, {1, 1, 2, 3, 3, 2, 2004}, {3, 1, 2, 1, 2, 3, 2004}, {3, 2, 1, 3, 1, 2, 2004}, {2004, 3, 1, 2, 4}, {1, 2, 2004, 3, 4}, {3, 1, 3, 2, 1, 2, 2004}, {2, 2004, 1, 3, 4}, {2, 4, 1, 3, 2004}, {2004, 1, 3, 2, 4}, {4, 1, 3, 2, 2004}, {3, 2, 1, 2004, 4}, {3, 2, 1, 4, 2004}, {1, 1, 2, 3, 2, 3, 2004}, {2, 1, 2, 3, 3, 1, 2004}, {1, 2, 3, 1, 2, 3, 2004}, {2, 3, 3, 1, 1, 2, 2004}, {3, 2, 1, 3, 2, 1, 2004}, {3, 2, 1, 1, 2, 3, 2004}, {2, 1, 1, 3, 2, 3, 2004}, {1, 3, 2, 2004, 4}, {1, 3, 2, 4, 2004}, {2, 3, 1, 2, 1, 3, 2004}, {1, 3, 2004, 2, 4}, {1, 3, 4, 2, 2004}, {2, 2, 3, 3, 1, 1, 2004}, {1, 3, 1, 2, 2, 3, 2004}, {3, 2004, 1, 2, 4}, {3, 4, 1, 2, 2004}, {2, 1, 1, 2, 3, 3, 2004}, {2, 3, 1, 3, 2, 1, 2004}, {3, 1, 1, 3, 2, 2, 2004}, {1, 3, 3, 1, 2, 2, 2004}, {1, 3, 2, 1, 3, 2, 2004}, {3, 2, 3, 1, 1, 2, 2004}, {2, 1, 1, 3, 3, 2, 2004}, {3, 3, 1, 2, 1, 2, 2004}, {3, 1, 2, 1, 3, 2, 2004}, {1, 2, 1, 3, 2, 3, 2004}, {1, 2, 3, 3, 2, 1, 2004}, {3, 2, 1, 2, 1, 3, 2004}, {2, 1, 3, 3, 2, 1, 2004}, {2, 3, 3, 2, 1, 1, 2004}, {3, 3, 2, 1, 1, 2, 2004}, {1, 3, 2, 3, 1, 2, 2004}, {1, 3, 1, 3, 2, 2, 2004}, {3, 1, 1, 2, 2, 3, 2004}, {3, 1, 2004, 2, 4}, {3, 1, 4, 2, 2004}, {1, 2, 2, 1, 3, 3, 2004}, {3, 1, 2, 3, 2, 1, 2004}, {3, 1, 2, 2, 1, 3, 2004}, {2, 1, 3, 3, 1, 2, 2004}, {2, 2, 3, 1, 3, 1, 2004}, {3, 3, 1, 1, 2, 2, 2004}, {2, 1, 2, 1, 3, 3, 2004}, {3, 2, 3, 2, 1, 1, 2004}, {3, 2, 2, 3, 1, 1, 2004}, {1, 1, 2, 2, 3, 3, 2004}, {1, 2, 2, 3, 3, 1, 2004}, {2, 2, 1, 3, 1, 3, 2004}, {2, 3, 1, 3, 1, 2, 2004}, {3, 2, 1, 2, 3, 1, 2004}, {3, 2, 1, 1, 3, 2, 2004}, {3, 2, 2, 1, 1, 3, 2004}, {3, 2, 2, 1, 3, 1, 2004}, {3, 3, 2, 2, 1, 1, 2004}, {1, 2, 3, 3, 1, 2, 2004}, {1, 3, 1, 2, 3, 2, 2004}, {1, 2, 3, 2, 3, 1, 2004}, {1, 3, 2, 1, 2, 3, 2004}, {2, 2, 3, 1, 1, 3, 2004}, {2, 1, 3, 1, 2, 3, 2004}, {1, 1, 3, 2, 3, 2, 2004}
     };
+    private static Map<String, int[][]> H_DATA = new ConcurrentHashMap<>();
+    private static ObjectMapper objectMapper = new ObjectMapper();
+    public static final String path = "matchBonusData/";
 
     public static String getBonusWinPattern(int randomIndex, int bonusMultiplier) {
+        StringBuilder bonusWinPattern = new StringBuilder();
+        int[][] data = getHData(randomIndex);
+
+        String[] keys = {SlotEngineConstant.H1, SlotEngineConstant.H2,
+                SlotEngineConstant.H3, SlotEngineConstant.H4};
+        String key = keys[randomIndex];
+        if (data == null || data.length == 0) {
+            log.error("BonusCharactersUtil.getBonusWinPattern..No data loaded for key: {}", key);
+            return "";
+        }
+        int randomBonusIndex = RandomUtil.getRandomInt(data.length);
+        String bonusCharacters = String.format("%04d", randomBonusIndex);
+        return bonusWinPattern.append(key)
+                .append(bonusMultiplier)
+                .append(bonusCharacters)
+                .toString();
+    }
+
+    private static int[][] getHData(int randomIndex) {
+        // 定义映射关系
+        String[] keys = {SlotEngineConstant.H1, SlotEngineConstant.H2,
+                SlotEngineConstant.H3, SlotEngineConstant.H4};
+        String[] fileNames = {"h1_data.json", "h2_data.json", "h3_data.json", "h4_data.json"};
+
+        if (randomIndex < 0 || randomIndex >= keys.length) {
+            log.error("BonusCharactersUtil.getBonusWinPattern..randomIndex out of range");
+            throw new IllegalArgumentException("randomIndex out of range");
+        }
+
+        String key = keys[randomIndex];
+        String fileName = fileNames[randomIndex];
+
+        int[][] data = H_DATA.get(key);
+        if (data == null || data.length == 0) {
+            data = loadSingleData(key, fileName);
+        }
+        return data;
+    }
+
+    private static int[][] loadSingleData(String key, String fileName) {
+        try {
+            InputStream is = getInputStream(fileName);
+            if (is == null) {
+                log.error("can't match bonus characters data file: " + fileName);
+                return null;
+            }
+            // 读取JSON数组并转换为List<int[]>
+            List<int[]> list = objectMapper.readValue(is, new TypeReference<List<int[]>>() {
+            });
+
+            // 转换为二维数组并存入Map
+            int[][] array = list.toArray(new int[0][]);
+            H_DATA.put(key, array);
+            log.info("load bonus data key={} totalCount={}", key, array.length);
+            return array;
+        } catch (Exception e) {
+            log.error("load bonus characters data file: {}", e.getMessage());
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    private static InputStream getInputStream(String fileName) {
+        InputStream is = null;
+        try {
+            String file = path + fileName;
+
+            // 检查文件系统
+            File systemFile = new File(file);
+            if (systemFile.exists()) {
+                return new FileInputStream(systemFile);
+            }
+            // 检查类路径
+            String resourcePath = file;
+            if (!resourcePath.startsWith("/")) {
+                resourcePath = "/" + resourcePath;
+            }
+            is = BonusCharactersUtil.class.getResourceAsStream(resourcePath);
+            if (is == null && resourcePath.startsWith("/")) {
+                resourcePath = resourcePath.substring(1);
+                is = BonusCharactersUtil.class.getClassLoader().getResourceAsStream(resourcePath);
+            }
+
+        } catch (Exception e) {
+            log.error("load bonus characters data file: {}", e.getMessage());
+            e.printStackTrace();
+        }
+        return is;
+    }
+
+    public static String getBonusWinWildPattern(int randomIndex, int bonusMultiplier) {
         StringBuilder bonusWinPattern = new StringBuilder();
         int randomBonusIndex = 0;
         switch (randomIndex) {
@@ -132,17 +236,43 @@ public class BonusCharactersUtil {
         return bonusWinPattern.toString();
     }
 
+    public static int getRecoverHitLevel(String bonusWinPattern) {
+        if (bonusWinPattern.length() == SlotEngineConstant.BONUS_WIN_PATTER_LEN) {
+            String iconType = bonusWinPattern.substring(0, 3);
+            int hitLevel = -1;
+            switch (iconType) {
+                case SlotEngineConstant.H1:
+                    hitLevel = 1;
+                    break;
+                case SlotEngineConstant.H2:
+                    hitLevel = 2;
+                    break;
+                case SlotEngineConstant.H3:
+                    hitLevel = 3;
+                    break;
+                case SlotEngineConstant.H4:
+                    hitLevel = 4;
+                    break;
+                default:
+                    break;
+            }
+            return hitLevel;
+        } else {
+            throw new RuntimeException("bonusWinPattern error!");
+        }
+    }
+
     public static int[] getCharactersResult(String bonusWinPattern, int[] allCharacters) {
         //前3位图标类型，第4位bonusMul,第5位后随机出现的pick characters
         int[] characterResult = null;
         if (bonusWinPattern.length() == SlotEngineConstant.BONUS_WIN_PATTER_LEN) {
-            int iconType = Integer.parseInt(bonusWinPattern.substring(0, 3));
+            String iconType = bonusWinPattern.substring(0, 3);
             int bonusMul = Integer.parseInt(bonusWinPattern.substring(3, 4));
             int randomIndex = Integer.parseInt(bonusWinPattern.substring(4));
             if (bonusMul > 1) {
-                characterResult = getPickIcons(characterResult, iconType, randomIndex, H1_WILD, H2_WILD, H3_WILD, H12_WILD, H13_WILD, H23_WILD, H123_WILD);
+                characterResult = getPickIcons(characterResult, iconType, randomIndex, H1_WILD, H2_WILD, H3_WILD, H12_WILD);
             } else {
-                characterResult = getPickIcons(characterResult, iconType, randomIndex, H1, H2, H3, H12, H13, H23, H123);
+                characterResult = getPickIcons(characterResult, iconType, randomIndex);
             }
         } else {
             log.error("BonusCharactersUtil.getCharactersResult..bonusWinPattern must be 7 characters,bonusWinPatternLen={} ", bonusWinPattern.length());
@@ -160,7 +290,31 @@ public class BonusCharactersUtil {
 
     }
 
-    private static int[] getPickIcons(int[] characterResult, int coinType, int randomIndex, int[][] h1, int[][] h2, int[][] h3, int[][] h12, int[][] h13, int[][] h23, int[][] h123) {
+    private static int[] getPickIcons(int[] characterResult, String iconType, int randomIndex) {
+        int[][] data = null;
+        switch (iconType) {
+            case SlotEngineConstant.H1:
+                data = getHData(0);
+                break;
+            case SlotEngineConstant.H2:
+                data = getHData(1);
+                break;
+            case SlotEngineConstant.H3:
+                data = getHData(2);
+                break;
+            case SlotEngineConstant.H4:
+                data = getHData(3);
+                break;
+            default:
+                break;
+        }
+        if (data != null) {
+            characterResult = data[randomIndex];
+        }
+        return characterResult;
+    }
+
+    private static int[] getPickIcons(int[] characterResult, String coinType, int randomIndex, int[][] h1, int[][] h2, int[][] h3, int[][] h4) {
         switch (coinType) {
             case SlotEngineConstant.H1:
                 characterResult = h1[randomIndex];
@@ -171,17 +325,8 @@ public class BonusCharactersUtil {
             case SlotEngineConstant.H3:
                 characterResult = h3[randomIndex];
                 break;
-            case SlotEngineConstant.H1H2:
-                characterResult = h12[randomIndex];
-                break;
-            case SlotEngineConstant.H1H3:
-                characterResult = h13[randomIndex];
-                break;
-            case SlotEngineConstant.H2H3:
-                characterResult = h23[randomIndex];
-                break;
-            case SlotEngineConstant.H1H2H3:
-                characterResult = h123[randomIndex];
+            case SlotEngineConstant.H4:
+                characterResult = h4[randomIndex];
                 break;
             default:
                 break;
@@ -296,24 +441,71 @@ public class BonusCharactersUtil {
         return StringUtil.ListToIntegerArray(resultIconList);
     }
 
-    private static int[] computeMatchH3(boolean isWild, int[] allCharacters) {
+    private static int[] computeMatchH4(boolean isWild, int[] allCharacters) {
         List<Integer> resultIconList;
-        int endClick = 5 + RandomUtil.getInternalRandom(3);
+        int endClick = 5 + RandomUtil.getInternalRandom(5);
         int[][] preResultPick = null;
         if (!isWild) {
             //endClick 5次结束最后一次是H1
             switch (endClick) {
                 case 5:
-                    preResultPick = new int[][]{{3, 3, 1, 2}, {3, 3, 1, 1}, {3, 3, 2, 2}, {3, 4, 1, 2}};
+                    preResultPick = new int[][]{{4, 4, 1, 2}, {4, 4, 1, 3}, {4, 4, 2, 3}, {4, 4, 1, 1}, {4, 4, 2, 2}, {4, 4, 3, 3}};
                     break;
                 case 6:
-                    preResultPick = new int[][]{{3, 3, 1, 1, 2}, {3, 3, 2, 2, 1}};
+                    preResultPick = new int[][]{{4, 4, 1, 2, 3}, {4, 4, 1, 1, 2}, {4, 4, 1, 1, 3}, {4, 4, 2, 2, 1}, {4, 4, 2, 2, 3}, {4, 4, 3, 3, 1}, {4, 4, 3, 3, 2}};
                     break;
                 case 7:
-                    preResultPick = new int[][]{{1, 1, 2, 2, 3, 3}};
+                    preResultPick = new int[][]{{4, 4, 1, 1, 2, 3}, {4, 4, 1, 1, 2, 2}, {4, 4, 1, 1, 3, 3}, {4, 4, 2, 2, 3, 3}, {4, 4, 2, 2, 1, 3}, {4, 4, 3, 3, 1, 2}};
+                    break;
+                case 8:
+                    preResultPick = new int[][]{{4, 4, 1, 1, 2, 2, 3}, {4, 4, 2, 2, 3, 3, 1}, {4, 4, 1, 1, 3, 3, 2}};
+                    break;
+                case 9:
+                    preResultPick = new int[][]{{4, 4, 1, 1, 2, 2, 3, 3}};
                     break;
                 default:
-                    preResultPick = new int[][]{{3, 3, 1, 2}, {3, 3, 1, 1}, {3, 3, 2, 2}, {3, 4, 1, 2}};
+                    preResultPick = new int[][]{{4, 4, 1, 2}, {4, 4, 1, 3}, {4, 4, 2, 3}, {4, 4, 1, 1}, {4, 4, 2, 2}, {4, 4, 3, 3}};
+                    break;
+            }
+            resultIconList = getResultList(preResultPick, 4, allCharacters);
+        } else {
+            //contain wild only pick 5
+            int randomIndex = RandomUtil.getInternalRandom(2);
+            if (randomIndex == 0) {
+                preResultPick = new int[][]{{3, 3, 1, 2}};
+                resultIconList = getResultList(preResultPick, 4, allCharacters);
+            } else {
+                preResultPick = new int[][]{{3, 4, 1, 2}};
+                resultIconList = getResultList(preResultPick, 3, allCharacters);
+            }
+        }
+        return StringUtil.ListToIntegerArray(resultIconList);
+    }
+
+    private static int[] computeMatchH3(boolean isWild, int[] allCharacters) {
+        List<Integer> resultIconList;
+        int endClick = 5 + RandomUtil.getInternalRandom(5);
+        int[][] preResultPick = null;
+        if (!isWild) {
+            //endClick 5次结束最后一次是H1
+            switch (endClick) {
+                case 5:
+                    preResultPick = new int[][]{{3, 3, 1, 2}, {3, 3, 1, 4}, {3, 3, 2, 4}, {3, 3, 1, 1}, {3, 3, 2, 2}, {3, 3, 4, 4}};
+                    break;
+                case 6:
+                    preResultPick = new int[][]{{3, 3, 1, 2, 4}, {3, 3, 1, 1, 2}, {3, 3, 1, 1, 4}, {3, 3, 2, 2, 1}, {3, 3, 2, 2, 4}, {3, 3, 4, 4, 1}, {3, 3, 4, 4, 2}};
+                    break;
+                case 7:
+                    preResultPick = new int[][]{{3, 3, 1, 1, 2, 4}, {3, 3, 1, 1, 2, 2}, {3, 3, 1, 1, 4, 4}, {3, 3, 2, 2, 4, 4}, {3, 3, 2, 2, 1, 4}, {3, 3, 4, 4, 1, 2}};
+                    break;
+                case 8:
+                    preResultPick = new int[][]{{3, 3, 1, 1, 2, 2, 4}, {3, 3, 2, 2, 4, 4, 1}, {3, 3, 1, 1, 4, 4, 2}};
+                    break;
+                case 9:
+                    preResultPick = new int[][]{{3, 3, 1, 1, 2, 2, 4, 4}};
+                    break;
+                default:
+                    preResultPick = new int[][]{{3, 3, 1, 2}, {3, 3, 1, 4}, {3, 3, 2, 4}, {3, 3, 1, 1}, {3, 3, 2, 2}, {3, 3, 4, 4}};
                     break;
             }
             resultIconList = getResultList(preResultPick, 3, allCharacters);
@@ -333,22 +525,28 @@ public class BonusCharactersUtil {
 
     private static int[] computeMatchH2(boolean isWild, int[] allCharacters) {
         List<Integer> resultIconList = new ArrayList<>();
-        int endClick = 5 + RandomUtil.getInternalRandom(3);
+        int endClick = 5 + RandomUtil.getInternalRandom(5);
         int[][] preResultPick = null;
         if (!isWild) {
             //endClick 5次结束最后一次是H1
             switch (endClick) {
                 case 5:
-                    preResultPick = new int[][]{{2, 2, 1, 3}, {2, 2, 1, 1}, {2, 2, 3, 3}, {2, 4, 1, 3}};
+                    preResultPick = new int[][]{{2, 2, 1, 3}, {2, 2, 1, 4}, {2, 2, 3, 4}, {2, 2, 1, 1}, {2, 2, 3, 3}, {2, 2, 4, 4}};
                     break;
                 case 6:
-                    preResultPick = new int[][]{{2, 2, 1, 1, 3}, {2, 2, 3, 3, 1}};
+                    preResultPick = new int[][]{{2, 2, 1, 3, 4}, {2, 2, 1, 1, 3}, {2, 2, 1, 1, 4}, {2, 2, 3, 3, 1}, {2, 2, 3, 3, 4}, {2, 2, 4, 4, 1}, {2, 2, 4, 4, 3}};
                     break;
                 case 7:
-                    preResultPick = new int[][]{{1, 1, 2, 2, 3, 3}};
+                    preResultPick = new int[][]{{2, 2, 1, 1, 3, 4}, {2, 2, 1, 1, 3, 3}, {2, 2, 1, 1, 4, 4}, {2, 2, 3, 3, 4, 4}, {2, 2, 3, 3, 1, 4}, {2, 2, 4, 4, 1, 3}};
+                    break;
+                case 8:
+                    preResultPick = new int[][]{{2, 2, 1, 1, 3, 3, 4}, {2, 2, 3, 3, 4, 4, 1}, {2, 2, 1, 1, 4, 4, 3}};
+                    break;
+                case 9:
+                    preResultPick = new int[][]{{2, 2, 1, 1, 3, 3, 4, 4}};
                     break;
                 default:
-                    preResultPick = new int[][]{{2, 2, 1, 3}, {2, 2, 1, 1}, {2, 2, 3, 3}, {2, 4, 1, 3}};
+                    preResultPick = new int[][]{{2, 2, 1, 3}, {2, 2, 1, 4}, {2, 2, 3, 4}, {2, 2, 1, 1}, {2, 2, 3, 3}, {2, 2, 4, 4}};
                     break;
             }
             resultIconList = getResultList(preResultPick, 2, allCharacters);
@@ -368,22 +566,28 @@ public class BonusCharactersUtil {
 
     private static int[] computeMatchH1(boolean isWild, int[] allCharacters) {
         List<Integer> resultIconList = new ArrayList<>();
-        int endClick = 5 + RandomUtil.getInternalRandom(3);
+        int endClick = 5 + RandomUtil.getInternalRandom(5);
         int[][] preResultPick = null;
         if (!isWild) {
             //endClick 5次结束最后一次是H1
             switch (endClick) {
                 case 5:
-                    preResultPick = new int[][]{{1, 1, 2, 3}, {1, 1, 2, 2}, {1, 1, 3, 3}, {1, 4, 2, 3}};
+                    preResultPick = new int[][]{{1, 1, 2, 3}, {1, 1, 2, 4}, {1, 1, 3, 4}, {1, 1, 2, 2}, {1, 1, 3, 3}, {1, 1, 4, 4}};
                     break;
                 case 6:
-                    preResultPick = new int[][]{{1, 1, 2, 2, 3}, {1, 1, 3, 3, 2}};
+                    preResultPick = new int[][]{{1, 1, 2, 3, 4}, {1, 1, 2, 2, 3}, {1, 1, 2, 2, 4}, {1, 1, 3, 3, 2}, {1, 1, 3, 3, 4}, {1, 1, 4, 4, 2}, {1, 1, 4, 4, 3}};
                     break;
                 case 7:
-                    preResultPick = new int[][]{{1, 1, 2, 2, 3, 3}};
+                    preResultPick = new int[][]{{1, 1, 2, 2, 3, 4}, {1, 1, 2, 2, 3, 3}, {1, 1, 2, 2, 4, 4}, {1, 1, 3, 3, 4, 4}, {1, 1, 3, 3, 2, 4}, {1, 1, 4, 4, 2, 3}};
+                    break;
+                case 8:
+                    preResultPick = new int[][]{{1, 1, 2, 2, 3, 3, 4}, {1, 1, 3, 3, 4, 4, 2}, {1, 1, 2, 2, 4, 4, 3}};
+                    break;
+                case 9:
+                    preResultPick = new int[][]{{1, 1, 2, 2, 3, 3, 4, 4}};
                     break;
                 default:
-                    preResultPick = new int[][]{{1, 1, 2, 3}, {1, 1, 2, 2}, {1, 1, 3, 3}, {1, 4, 2, 3}};
+                    preResultPick = new int[][]{{1, 1, 2, 3}, {1, 1, 2, 4}, {1, 1, 3, 4}, {1, 1, 2, 2}, {1, 1, 3, 3}, {1, 1, 4, 4}};
                     break;
             }
             resultIconList = getResultList(preResultPick, 1, allCharacters);
@@ -446,23 +650,23 @@ public class BonusCharactersUtil {
     };
     private static final int[] ICON_POOL = {1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4};
 
-    private static final int WILD_CHARACTER = 4;
+    private static final int WILD_CHARACTER = 0;
 
     public static void main(String[] args) {
-        String bonusWinPatter = "1110004";
-        System.out.println(bonusWinPatter.substring(0, 3));
-        System.out.println(bonusWinPatter.charAt(3));
-        System.out.println(bonusWinPatter.substring(4));
+        //String bonusWinPatter = "1110004";
+        //System.out.println(bonusWinPatter.substring(0, 3));
+        //System.out.println(bonusWinPatter.charAt(3));
+        //System.out.println(bonusWinPatter.substring(4));
 
-        /*int count = 10000;
+        /*int count = 110000;
         //mul=2的时候wild结果为2004
-        int bonusMultiplier = 2;
+        int bonusMultiplier = 1;
 
         List<int[]> resultIconList = new ArrayList<>();
         for (int i = 0; i < count; i++) {
             //int weightIndex = RandomUtil.getRandomIndexFromArrayWithWeight(new int[]{9, 1});
             //boolean isWild = weightIndex == 1;
-            int[] resultH1 = computeMatchH1H2H3(ICON_POOL);
+            int[] resultH1 = computeMatchH1(false, ICON_POOL);
             boolean isFlag = false;
             if (!resultIconList.isEmpty()) {
                 for (int[] tempArray : resultIconList) {
@@ -480,9 +684,10 @@ public class BonusCharactersUtil {
         System.out.println(resultIconList.size());
         StringBuilder stb = new StringBuilder();
         stb.append("result=");
-        stb.append("{");
+        stb.append("[");
         for (int[] resultH1 : resultIconList) {
-            int wildCount = computeWildCount(resultH1);
+            //int wildCount = computeWildCount(resultH1);
+            int wildCount = 0;
             if (bonusMultiplier > 1 && WILD_CHARACTER > 0 && wildCount > 0) {
                 int randomWildIndex = RandomUtil.getRandomInt(wildCount);
                 int tmp = 0;
@@ -496,11 +701,17 @@ public class BonusCharactersUtil {
                 }
             }
             String str = Arrays.toString(resultH1);
-            stb.append(str.replace("[", "{").replace("]", "}"));
-            stb.append(",");
+            stb.append(str);
+            //stb.append(str.replace("[", "").replace("]", ""));
+            stb.append(",\n");
         }
-        stb.append("}");
+        stb.append("]");
         System.out.println(stb.toString());*/
+        for (int i = 0; i < 10; i++) {
+            String bonusWinPattern = getBonusWinPattern(1, 1);
+            System.out.println(bonusWinPattern);
+        }
+
     }
 
 }

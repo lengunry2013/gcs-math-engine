@@ -31,7 +31,7 @@ public abstract class BaseChoiceMatchBonus extends BaseBonus {
 
     protected abstract int[] getBonusMultiplier();
 
-    protected abstract int[] getPickAwardWeight();
+    protected abstract int[][] getPickAwardWeight();
 
     /**
      * bonus start.
@@ -46,11 +46,11 @@ public abstract class BaseChoiceMatchBonus extends BaseBonus {
         int displayCharCount = getDisplayCharactersCount();
         int hitSymbolCount = getHitSymbolCount(gameSessionBean.getSlotSpinResult());
         long[] charactersAwards = getCharactersAwards(payback, hitSymbolCount);
-        if (charactersAwards != null) {
+        /*if (charactersAwards != null) {
             for (int i = 0; i < charactersAwards.length; i++) {
                 charactersAwards[i] *= gameSessionBean.getSumBetCredit();
             }
-        }
+        }*/
         int bonusStatus = GameConstant.SLOT_GAME_BONUS_STATUS_START;
         int[] pickIndexs = null;
         int[] pickCharacters = new int[displayCharCount];
@@ -69,7 +69,8 @@ public abstract class BaseChoiceMatchBonus extends BaseBonus {
             pickCharacters[i] = allCharacters[randomIndex[i]];
         }*/
         //int wildCharacter = getWildCharacter();
-        int[] awardWeights = getPickAwardWeight();
+        int betLevel = (int) (gameSessionBean.getBet() - 1);
+        int[] awardWeights = getPickAwardWeight()[betLevel];
         int randomIndex = RandomUtil.getRandomIndexFromArrayWithWeight(awardWeights);
         int bonusMultiplier = getBonusMultiplier()[randomIndex];
         bonusWinPattern = BonusCharactersUtil.getBonusWinPattern(randomIndex, bonusMultiplier);
@@ -97,11 +98,11 @@ public abstract class BaseChoiceMatchBonus extends BaseBonus {
         int displayCharCount = getDisplayCharactersCount();
         int hitSymbolCount = getHitSymbolCount(gameSessionBean.getSlotSpinResult());
         long[] charactersAwards = getCharactersAwards(payback, hitSymbolCount);
-        if (charactersAwards != null) {
+        /*if (charactersAwards != null) {
             for (int i = 0; i < charactersAwards.length; i++) {
                 charactersAwards[i] *= gameSessionBean.getSumBetCredit();
             }
-        }
+        }*/
         int bonusStatus = GameConstant.SLOT_GAME_BONUS_STATUS_START;
         int[] pickIndexs = null;
         int[] pickCharacters = new int[displayCharCount];
@@ -118,7 +119,6 @@ public abstract class BaseChoiceMatchBonus extends BaseBonus {
         int[] allCharacters = getAllCharacters();
         if (recoverInfo != null) {
             bonusWinPattern = recoverInfo.getRecoverData();
-            //bonusMultiplier = Integer.parseInt(bonusWinPattern.substring(3, 4));
             input = new InputInfo();
             input.setPickCharacters(BonusCharactersUtil.getCharactersResult(bonusWinPattern, allCharacters));
         }
@@ -136,7 +136,8 @@ public abstract class BaseChoiceMatchBonus extends BaseBonus {
                 pickCharacters[i] = allCharacters[randomIndex[i]];
             }*/
             int wildCharacter = getWildCharacter();
-            int[] awardWeights = getPickAwardWeight();
+            int betLevel = (int) (gameSessionBean.getBet() - 1);
+            int[] awardWeights = getPickAwardWeight()[betLevel];
             int randomIndex = RandomUtil.getRandomIndexFromArrayWithWeight(awardWeights);
             bonusMultiplier = getBonusMultiplier()[randomIndex];
             bonusWinPattern = BonusCharactersUtil.getBonusWinPattern(randomIndex, bonusMultiplier);
@@ -191,6 +192,7 @@ public abstract class BaseChoiceMatchBonus extends BaseBonus {
         long payForPick = 0;
         int bonusMultiplier = 1;
         String bonusWinPattern = "";
+        int hitLevel = -1;
         if (bonus != null) {
             SlotChoiceBonusResult choiceBonusResult = (SlotChoiceBonusResult) bonus;
             charactersAwards = choiceBonusResult.getCharactersRewards();
@@ -203,6 +205,7 @@ public abstract class BaseChoiceMatchBonus extends BaseBonus {
             displayCharacters4Reveal = choiceBonusResult.getDisplayCharacters4Reveal();
             bonusMultiplier = choiceBonusResult.getBonusMul();
             bonusWinPattern = choiceBonusResult.getBonusWinPattern();
+            hitLevel = choiceBonusResult.getHitLevel();
             int pickCount = 0;
             if (pickIndexs != null) {
                 pickCount = pickIndexs.length;
@@ -283,6 +286,7 @@ public abstract class BaseChoiceMatchBonus extends BaseBonus {
                             payForPick = charactersAwards[i];
                             totalPay = payForPick;
                             hitCharacters = new int[]{i + 1};
+                            hitLevel = i + 1;
                             hitCharactersPay = new long[]{payForPick};
                             break;
                         }
@@ -317,6 +321,7 @@ public abstract class BaseChoiceMatchBonus extends BaseBonus {
                 result.setPayForPickIndex(payForPick);
                 result.setBonusMul(bonusMultiplier);
                 result.setBonusWinPattern(bonusWinPattern);
+                result.setHitLevel(hitLevel);
             }
         }
         return result;

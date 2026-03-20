@@ -365,6 +365,127 @@ public class GameLogicController {
         return new ResponseEntity<>(res, HttpStatus.OK);
     }
 
+    @PostMapping("/api/math-engine/{mmID}/{payback}/wager-saver")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> wagerSaver(
+            @RequestHeader(name = "tokenID") String token,
+            @PathVariable("mmID") String mmID, @PathVariable("payback") int payback,
+            @RequestBody JSONObject gameLogicInfo
+    ) throws ServiceOfflineException, AuthenticationFailException {
+        log.debug(">>> Request wager-saver.");
+        log.debug(">>> token {}", token);
+        log.debug(">>> mmID {}", mmID);
+        log.debug(">>> payback {}", payback);
+        Environment.checkOffline();
+        if (!checkAuthentication(token)) throw new AuthenticationFailException();
+
+        Map<String, Object> res = new TreeMap<>();
+        if (!GameMathCacheStorage.getInstance().isValidMathInfo(mmID, payback)) {
+            res.put("error", "MathModel or Payback Not found.");
+            return new ResponseEntity<>(res, HttpStatus.NOT_FOUND);
+        }
+        BaseGameLogicBean result;
+        IGameEngine engine = GameEngineFactory.getGameEngine(payback, mmID);
+        try {
+            Map gameLogicData = (Map) gameLogicInfo.get("gameLogicData");
+            JSONObject gameSessionBeanJson = null;
+            if (gameLogicData != null) {
+                gameSessionBeanJson = new JSONObject(gameLogicData);
+            }
+            BaseGameLogicBean gameLogicBean = BaseGameLogicBean.deserialize(gameSessionBeanJson);
+            Map gameLogicRequest = (Map) gameLogicInfo.get("gameLogicRequest");
+            Map inputInfoMap = (Map) gameLogicInfo.get("inputInfo");
+            ObjectMapper mapper = new ObjectMapper();
+            InputInfo inputInfo = mapper.convertValue(inputInfoMap, InputInfo.class);
+
+            //wager-saver
+            engine.init(gameLogicBean);
+            result = engine.gameStart(gameLogicBean, gameLogicRequest, inputInfo, null);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+            res.put("error", "Invalid Request Json");
+            return new ResponseEntity<>(res, HttpStatus.BAD_REQUEST);
+        } catch (JSONException e) {
+            e.printStackTrace();
+            res.put("error", "Invalid Request Json");
+            return new ResponseEntity<>(res, HttpStatus.BAD_REQUEST);
+        } catch (InvalidBetException e) {
+            e.printStackTrace();
+            res.put("error", "Invalid Bet Update");
+            return new ResponseEntity<>(res, HttpStatus.BAD_REQUEST);
+        } catch (InvalidGameStateException e) {
+            e.printStackTrace();
+            res.put("error", "Invalid Game State");
+            return new ResponseEntity<>(res, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        res.put("gameLogicData", result);
+        res.put("engineContextMap", engine.getEngineContext());
+        log.debug("<<< Response Msg: {}", JSON.toJSONString(res, SerializerFeature.WriteMapNullValue));
+        return new ResponseEntity<>(res, HttpStatus.OK);
+    }
+
+    @PostMapping("/api/math-engine/{mmID}/{payback}/wager-saver-recover")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> wagerSaverRecover(
+            @RequestHeader(name = "tokenID") String token,
+            @PathVariable("mmID") String mmID, @PathVariable("payback") int payback,
+            @RequestBody JSONObject gameLogicInfo
+    ) throws ServiceOfflineException, AuthenticationFailException {
+        log.debug(">>> Request wager-saver-recover.");
+        log.debug(">>> token {}", token);
+        log.debug(">>> mmID {}", mmID);
+        log.debug(">>> payback {}", payback);
+        Environment.checkOffline();
+        if (!checkAuthentication(token)) throw new AuthenticationFailException();
+
+        Map<String, Object> res = new TreeMap<>();
+        if (!GameMathCacheStorage.getInstance().isValidMathInfo(mmID, payback)) {
+            res.put("error", "MathModel or Payback Not found.");
+            return new ResponseEntity<>(res, HttpStatus.NOT_FOUND);
+        }
+        BaseGameLogicBean result;
+        IGameEngine engine = GameEngineFactory.getGameEngine(payback, mmID);
+        try {
+            Map gameLogicData = (Map) gameLogicInfo.get("gameLogicData");
+            JSONObject gameSessionBeanJson = null;
+            if (gameLogicData != null) {
+                gameSessionBeanJson = new JSONObject(gameLogicData);
+            }
+            BaseGameLogicBean gameLogicBean = BaseGameLogicBean.deserialize(gameSessionBeanJson);
+            Map gameLogicRequest = (Map) gameLogicInfo.get("gameLogicRequest");
+            Map inputInfoMap = (Map) gameLogicInfo.get("inputInfo");
+            ObjectMapper mapper = new ObjectMapper();
+            InputInfo inputInfo = mapper.convertValue(inputInfoMap, InputInfo.class);
+            //recovery/recall data
+            Map gameRecoverMap = (Map) gameLogicInfo.get("recoverInfo");
+            RecoverInfo recoverInfo = mapper.convertValue(gameRecoverMap, RecoverInfo.class);
+
+            //wager-saver-recover
+            engine.init(gameLogicBean);
+            result = engine.gameStart(gameLogicBean, gameLogicRequest, inputInfo, recoverInfo);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+            res.put("error", "Invalid Request Json");
+            return new ResponseEntity<>(res, HttpStatus.BAD_REQUEST);
+        } catch (JSONException e) {
+            e.printStackTrace();
+            res.put("error", "Invalid Request Json");
+            return new ResponseEntity<>(res, HttpStatus.BAD_REQUEST);
+        } catch (InvalidBetException e) {
+            e.printStackTrace();
+            res.put("error", "Invalid Bet Update");
+            return new ResponseEntity<>(res, HttpStatus.BAD_REQUEST);
+        } catch (InvalidGameStateException e) {
+            e.printStackTrace();
+            res.put("error", "Invalid Game State");
+            return new ResponseEntity<>(res, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        res.put("gameLogicData", result);
+        res.put("engineContextMap", engine.getEngineContext());
+        log.debug("<<< Response Msg: {}", JSON.toJSONString(res, SerializerFeature.WriteMapNullValue));
+        return new ResponseEntity<>(res, HttpStatus.OK);
+    }
+
 
     protected boolean checkAuthentication(String token) {
         return true;

@@ -13,6 +13,7 @@ import com.gcs.game.exception.InvalidGameStateException;
 import com.gcs.game.exception.InvalidPlayerInputException;
 import com.gcs.game.utils.CompressUtil;
 import com.gcs.game.utils.GameConstant;
+import com.gcs.game.utils.RandomUtil;
 import com.gcs.game.vo.*;
 import lombok.extern.slf4j.Slf4j;
 
@@ -210,6 +211,20 @@ public class SlotEngineUtil {
                     }
                 } else*/
                 if (model != null) {
+                    //compute wager saver
+                    int wagerType = SlotEngineConstant.NORMAL_SPIN;
+                    if (gameLogicMap.containsKey("remainBalance")) {
+                        //unit cent
+                        long remainBalance = Long.parseLong(gameLogicMap.get("remainBalance").toString());
+                        //1:normal spin，2:saver loss， 3:saver win
+                        wagerType = computeWagerSaver(remainBalance, gameLogicCache, model, recoverInfo);
+                        if (wagerType == SlotEngineConstant.SAVER_LOSS) {
+                            setRecoverData(gameLogicCache, wagerType);
+                            return gameLogicCache;
+                        } else if (wagerType == SlotEngineConstant.SAVER_WIN) {
+                            gameLogicCache.setBet(model.minBetPerLine());
+                        }
+                    }
                     checkBetInfo(gameLogicCache, model);
                     SlotSpinResult baseSpinResult;
                     int reelCount = model.getReelCount();
@@ -224,6 +239,7 @@ public class SlotEngineUtil {
                     if (baseSpinResult != null) {
                         log.debug("spin result is not null");
                         baseSpinResult.setSpinType(SlotEngineConstant.SPIN_TYPE_SPIN_IN_BASE_GAME);
+                        baseSpinResult.setWagerType(wagerType);
 
                         gameLogicCache.setSlotSpinResult(baseSpinResult);
                         gameLogicCache.setSlotFsSpinResults(null);
@@ -238,6 +254,7 @@ public class SlotEngineUtil {
                         long winCredit = baseSpinResult.getSlotPay();
                         long winCent = winCredit * denom;
 
+                        setRecoverData(gameLogicCache, wagerType);
                         gameLogicCache.setSumWinCredit(winCredit);
                         gameLogicCache.setSumWinBalance(winCent);
                         gameLogicCache.setPayForCurrentStep(winCredit);
@@ -258,6 +275,34 @@ public class SlotEngineUtil {
             log.error("", e);
             throw new InvalidGameStateException();
         }
+    }
+
+    private static void setRecoverData(SlotGameLogicBean gameLogicCache, int wagerType) throws InvalidGameStateException {
+        SlotSpinResult slotSpinResult = gameLogicCache.getSlotSpinResult();
+        if (slotSpinResult != null) {
+            long result = CompressUtil.compressToLong(slotSpinResult.getSlotReelStopPosition(), slotSpinResult.getBaseGameMul());
+            long recoverData = CompressUtil.compressToLong(result, wagerType);
+            slotSpinResult.setRecoverData(String.valueOf(recoverData));
+        } else {
+            log.error("BaseGame spin data error!");
+            throw new InvalidGameStateException();
+        }
+    }
+
+    private static int computeWagerSaver(long remainBalance, SlotGameLogicBean gameLogicCache, BaseSlotModel model, RecoverInfo recoverInfo) {
+        int wagerType = SlotEngineConstant.NORMAL_SPIN;
+        //recover data
+        if (recoverInfo != null) {
+            wagerType = CompressUtil.decompressWagerType(Long.parseLong(recoverInfo.getRecoverData()));
+            return wagerType;
+        }
+        long minBetBalance = model.minLines() * model.minBetPerLine() * gameLogicCache.getDenom();
+        if (remainBalance < minBetBalance) {
+            long saverWeight = remainBalance * 10000 / minBetBalance;
+            long[] remainCreditWeight = new long[]{10000 - saverWeight, saverWeight};
+            wagerType = RandomUtil.getRandomIndexFromArrayWithWeight(remainCreditWeight) + 2;
+        }
+        return wagerType;
     }
 
     private static InputInfo slotBaseGameRecover(InputInfo input, RecoverInfo recoverInfo, int reelCount) {

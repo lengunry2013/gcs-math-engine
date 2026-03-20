@@ -139,10 +139,10 @@ public class Model20260201 extends BaseSlotModel implements IWildReelsChange, IW
     };
 
     protected int[] wildMysteryMultiplierWeight(int payback) {
-        int[] result = new int[]{500, 250, 126, 124, 0};
+        int[] result = new int[]{503, 250, 126, 121, 0};
         switch (payback) {
-            case 8804:
-                result = new int[]{500, 250, 126, 124, 0};
+            case 8842:
+                result = new int[]{503, 250, 126, 121, 0};
                 break;
             default:
                 break;

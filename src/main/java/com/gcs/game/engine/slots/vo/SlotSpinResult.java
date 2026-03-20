@@ -52,6 +52,8 @@ public class SlotSpinResult implements Cloneable {
 
     private int spinType = -1;
 
+    private int wagerType = 1;
+
     private String recoverData = "";
 
     @Override

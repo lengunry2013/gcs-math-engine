@@ -1,0 +1,12 @@
+# log level config
+logging:
+  level:
+    org:
+      springframework:
+        web:
+          filter:
+            CommonsRequestLoggingFilter: DEBUG
+
+# sever port config
+server:
+  port: 8099

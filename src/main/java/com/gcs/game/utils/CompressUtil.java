@@ -24,6 +24,11 @@ public class CompressUtil {
         return result;
     }
 
+    public static long compressToLong(long recoverData, int wagerType) {
+        // 放入wager type
+        return convertTo8Bit(recoverData, wagerType);
+    }
+
     public static long convertTo8Bit(long result, int param) {
         result = (result << 8) | (param & 0xFF); // 左移8位，然后放入一个字节
         return result;
@@ -37,13 +42,17 @@ public class CompressUtil {
 
     // 解压缩方法（如果需要）
     public static void decompressFromLong(long compressed, int[] positions, int[] multiplier) {
-        multiplier[0] = (int) (compressed & 0xFF);
+        multiplier[0] = (int) (compressed >> 8 & 0xFF);
         if (positions != null) {
             for (int i = positions.length - 1; i >= 0; i--) {
-                positions[i] = (int) ((compressed >> (8 * (5 - i))) & 0xFF);
+                positions[i] = (int) ((compressed >> (8 * (6 - i))) & 0xFF);
             }
         }
+    }
 
+    //第一位解压
+    public static int decompressWagerType(long compressed) {
+        return (int) (compressed & 0xFF);
     }
 
     public static long compressWith4Bits(int[] fsPos, List<Integer> wildPos) {
@@ -101,14 +110,16 @@ public class CompressUtil {
 
         long compressed = compressToLong(slotReelStopPosition, baseGameMul);
         System.out.println("slots压缩后的long值: " + compressed);
-        //System.out.println("十六进制: " + Long.toHexString(compressed));
-
+        long compressResult = compressToLong(compressed, 1);
+        System.out.println("slots压缩最终结果: " + compressResult);
         // 解压缩验证
         int[] decodedPositions = new int[5];
         int[] decodedMultiplier = new int[1];
-        decompressFromLong(compressed, decodedPositions, decodedMultiplier);
+        decompressFromLong(compressResult, decodedPositions, decodedMultiplier);
+        int wagerType = decompressWagerType(compressResult);
         System.out.println("解压后positions: " + java.util.Arrays.toString(decodedPositions));
         System.out.println("解压后multiplier: " + decodedMultiplier[0]);
+        System.out.println("解压后wager: " + wagerType);
 
         slotReelStopPosition = new int[]{54, 68, 31, 61, 78};
         List<Integer> wildPos = new ArrayList<Integer>();

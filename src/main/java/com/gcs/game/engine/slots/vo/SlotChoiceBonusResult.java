@@ -25,4 +25,6 @@ public class SlotChoiceBonusResult extends SlotBonusResult {
 
     private String bonusWinPattern = "";
 
+    private int hitLevel = -1;
+
 }
