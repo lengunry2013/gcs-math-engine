@@ -144,6 +144,9 @@ public class Model20260201 extends BaseSlotModel implements IWildReelsChange, IW
             case 8842:
                 result = new int[]{503, 250, 126, 121, 0};
                 break;
+            case 9000:
+                result = new int[]{462, 269, 139, 130, 0};
+                break;
             default:
                 break;
 

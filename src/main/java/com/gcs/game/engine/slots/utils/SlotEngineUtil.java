@@ -220,6 +220,7 @@ public class SlotEngineUtil {
                         wagerType = computeWagerSaver(remainBalance, gameLogicCache, model, recoverInfo);
                         if (wagerType == SlotEngineConstant.SAVER_LOSS) {
                             setRecoverData(gameLogicCache, wagerType);
+                            gameLogicCache.getSlotSpinResult().setWagerType(wagerType);
                             return gameLogicCache;
                         } else if (wagerType == SlotEngineConstant.SAVER_WIN) {
                             gameLogicCache.setBet(model.minBetPerLine());

@@ -283,8 +283,8 @@ public abstract class BaseChoiceMatchBonus extends BaseBonus {
                     for (int i = 0; i < charCount; i++) {
                         if (charactersCount[i] >= 3) {
                             bonusStatus = GameConstant.SLOT_GAME_BONUS_STATUS_COMPLETE;
-                            payForPick = charactersAwards[i];
-                            totalPay = payForPick;
+                            //payForPick = charactersAwards[i];
+                            //totalPay = payForPick;
                             hitCharacters = new int[]{i + 1};
                             hitLevel = i + 1;
                             hitCharactersPay = new long[]{payForPick};
