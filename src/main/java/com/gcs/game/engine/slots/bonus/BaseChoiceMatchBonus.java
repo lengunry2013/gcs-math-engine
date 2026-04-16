@@ -117,19 +117,16 @@ public abstract class BaseChoiceMatchBonus extends BaseBonus {
 
         int bonusMultiplier = 1;
         int[] allCharacters = getAllCharacters();
+        //recovery result
         if (recoverInfo != null) {
             bonusWinPattern = recoverInfo.getRecoverData();
             input = new InputInfo();
-            input.setPickCharacters(BonusCharactersUtil.getCharactersResult(bonusWinPattern, allCharacters));
+            input.setBonusWinPattern(bonusWinPattern);
         }
-        if (input != null && input.getPickCharacters() != null && input.getPickCharacters().length == displayCharCount) {
-            pickCharacters = input.getPickCharacters();
-            for (int pickChar : pickCharacters) {
-                if (pickChar > 1000) {
-                    int mul = pickChar / 1000;
-                    bonusMultiplier *= mul;
-                }
-            }
+        //configuration input bonusWinPattern
+        if (input != null && input.getBonusWinPattern() != null && input.getBonusWinPattern().length() == 8) {
+            bonusWinPattern = input.getBonusWinPattern();
+            pickCharacters = BonusCharactersUtil.getCharactersResult(bonusWinPattern, allCharacters);
         } else {
            /* int[] randomIndex = RandomUtil.getRandomIndex(displayCharCount);
             for (int i = 0; i < displayCharCount; i++) {

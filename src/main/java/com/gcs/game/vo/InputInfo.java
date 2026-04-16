@@ -14,4 +14,6 @@ public class InputInfo {
 
     private int[] pickCharacters = null;
 
+    private String bonusWinPattern="";
+
 }
