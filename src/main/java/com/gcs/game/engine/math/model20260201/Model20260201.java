@@ -173,7 +173,6 @@ public class Model20260201 extends BaseSlotModel implements IWildReelsChange, IW
         SlotSpinResult baseSpinResult = null;
         if (modelFeatureBean != null) {
             int[][] reels = modelFeatureBean.getSlotFsReels();
-            ;
             int[][] reelsWeight = modelFeatureBean.getSlotFsReelsWeight();
             if (gameSessionBean.getSlotBonusResult() != null) {
                 SlotChoiceFSBonusResult bonus = (SlotChoiceFSBonusResult) gameSessionBean.getSlotBonusResult();
