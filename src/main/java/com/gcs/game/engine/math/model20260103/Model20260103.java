@@ -142,10 +142,10 @@ public class Model20260103 extends BaseSlotModel implements IWildPositionsChange
     protected int[] getBaseReelsWeight(int payBack) {
         int[] baseReelsWeight = new int[]{899, 101};
         switch (payBack) {
-            case 8816:
+            case 8811:
                 baseReelsWeight = new int[]{899, 101};
                 break;
-            case 9016:
+            case 9011:
                 baseReelsWeight = new int[]{840, 160};
                 break;
             default:
@@ -155,12 +155,12 @@ public class Model20260103 extends BaseSlotModel implements IWildPositionsChange
     }
 
     protected int[] getFsReelsWeight(int payBack) {
-        int[] result = new int[]{300, 700};
+        int[] result = new int[]{200, 800};
         switch (payBack) {
-            case 8816:
-                result = new int[]{300, 700};
+            case 8811:
+                result = new int[]{200, 800};
                 break;
-            case 9016:
+            case 9011:
                 result = new int[]{300, 700};
                 break;
             default:
@@ -498,7 +498,7 @@ public class Model20260103 extends BaseSlotModel implements IWildPositionsChange
                         sc3AwardRandom = new RandomWeightUntil(SC_AWARD_WEIGHT[fsType - 1]);
                     }
                     for (int position : scPositions) {
-                        int scAwardIndex = sc2AwardRandom.getRandomResult();
+                        int scAwardIndex = sc3AwardRandom.getRandomResult();
                         jpBonusLevel = setFsHitScatter(gameLogicBean, scAwardIndex, position, scSymbol, hitList, result, jpBonusLevel);
                     }
                 }
