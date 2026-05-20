@@ -6,9 +6,13 @@ import com.gcs.game.engine.math.model1010802.Model1010802;
 import com.gcs.game.engine.math.model1260130.Model1260130;
 import com.gcs.game.engine.math.model1260130.Model1260130Bonus;
 import com.gcs.game.engine.math.model20260103.Model20260103;
+import com.gcs.game.engine.math.model20260104.Model20260104;
 import com.gcs.game.engine.math.model20260201.Model20260201;
 import com.gcs.game.engine.math.model20260201.Model20260201Bonus;
 import com.gcs.game.engine.math.model20260201.Model20260201FSBonus;
+import com.gcs.game.engine.math.model20260507.Model20260507;
+import com.gcs.game.engine.math.model20260508.Model20260508;
+import com.gcs.game.engine.math.model20260520.Model20260520;
 import com.gcs.game.engine.math.model5070530.Model5070530;
 import com.gcs.game.engine.math.model6060630.Model6060630;
 import com.gcs.game.engine.math.model6060630.Model6060630Bonus;
@@ -105,6 +109,18 @@ public class GameModelFactory {
                 break;
             case "20260103":
                 model = new Model20260103();
+                break;
+            case "20260104":
+                model = new Model20260104();
+                break;
+            case "20260507":
+                model = new Model20260507();
+                break;
+            case "20260508":
+                model = new Model20260508();
+                break;
+            case "20260520":
+                model = new Model20260520();
                 break;
             default:
                 break;

@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gcs.game.engine.math.model1260130.Model1260130SpinResult;
 import com.gcs.game.engine.math.model20260103.Model20260103SpinResult;
+import com.gcs.game.engine.math.model20260507.Model20260507SpinResult;
 
 
 import java.io.IOException;
@@ -26,6 +27,8 @@ public class SlotSpinResultDeserializer extends JsonDeserializer<SlotSpinResult>
             result = objectMapper.treeToValue(jNode, Model1260130SpinResult.class);
         } else if (jNode.findValue("mysterySymbol") != null) {
             result = objectMapper.treeToValue(jNode, Model20260103SpinResult.class);
+        } else if (jNode.findValue("swPosition") != null) {
+            result = objectMapper.treeToValue(jNode, Model20260507SpinResult.class);
         } else {
             result = objectMapper.treeToValue(jNode, SlotSpinResult.class);
         }
