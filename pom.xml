@@ -84,20 +84,31 @@
                     <include>**/*.properties</include>
                     <include>**/*.xml</include>
                     <include>**/*.json</include>
+                    <include>**/*.yaml</include>
                 </includes>
                 <filtering>true</filtering>
             </resource>
+           <!-- <resource>
+                <directory>${basedir}/src/main/resources</directory>
+                <includes>
+                    <include>**/*.p12</include>
+                    <include>**/*.jks</include>
+                    <include>**/*.png</include>
+                    <include>**/*.ico</include>
+                </includes>
+                <filtering>false</filtering>
+            </resource>-->
 
         </resources>
         <plugins>
-           <!-- <plugin>
+            <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
                     <includeSystemScope>true</includeSystemScope>
                 </configuration>
-            </plugin>-->
-            <plugin>
+            </plugin>
+            <!--<plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.3</version>
@@ -110,7 +121,7 @@
                         </exclude>
                     </excludes>
                 </configuration>
-            </plugin>
+            </plugin>-->
         </plugins>
     </build>
 

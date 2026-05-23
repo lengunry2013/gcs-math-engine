@@ -168,6 +168,39 @@ public class Model20260201 extends BaseSlotModel implements IWildReelsChange, IW
     public static final String FREE_SPIN_REELS2_KEY = "freespin_W";
     public static final String FREE_SPIN_REELS3_KEY = "freespin_G";
 
+    public SlotSpinResult spin(SlotGameFeatureVo modelFeatureBean, SlotGameLogicBean gameLogicBean) {
+        SlotSpinResult baseSpinResult = null;
+        if (modelFeatureBean != null) {
+            int[][] reels = getReels(modelFeatureBean, gameLogicBean);
+            int[][] reelsWeight = getReelsWeight(modelFeatureBean, gameLogicBean);
+            if (reels == null) {
+                reels = modelFeatureBean.getSlotReels();
+            }
+            if (reelsWeight == null) {
+                reelsWeight = modelFeatureBean.getSlotReelsWeight();
+            }
+            int[] stopPosition = null;
+            if (gameLogicBean.isHitGrandDaddy()) {
+                do {
+                    stopPosition = randomReelStopPosition(reelsWeight);
+                    boolean isSlot = true;
+                    int[] displaySymbols = getDisplaySymbols(reels, stopPosition);
+                    baseSpinResult = computeSpin(displaySymbols, stopPosition, gameLogicBean, isSlot);
+                } while (baseSpinResult.getSlotPay() != 0 || baseSpinResult.getHitSlotSymbols() != null
+                        || baseSpinResult.isTriggerBonus() || baseSpinResult.isTriggerFs());
+            } else {
+                stopPosition = randomReelStopPosition(reelsWeight);
+                boolean isSlot = true;
+                int[] displaySymbols = getDisplaySymbols(reels, stopPosition);
+                baseSpinResult = computeSpin(displaySymbols, stopPosition, gameLogicBean, isSlot);
+            }
+            this.currentReels = reels;
+            this.currentReelsWeight = reelsWeight;
+            this.currentStopPosition = stopPosition;
+        }
+        return baseSpinResult;
+    }
+
     @Override
     public SlotSpinResult spinInFreeSpin(SlotGameFeatureVo modelFeatureBean, SlotGameLogicBean gameSessionBean) {
         SlotSpinResult baseSpinResult = null;

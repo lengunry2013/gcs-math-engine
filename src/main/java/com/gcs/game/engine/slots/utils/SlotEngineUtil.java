@@ -167,6 +167,9 @@ public class SlotEngineUtil {
                 gameLogicCache.setBet(Long.parseLong(gameLogicMap.get("bet").toString()));
                 gameLogicCache.setLines(Long.parseLong(gameLogicMap.get("lines").toString()));
                 gameLogicCache.setDenom(Long.parseLong(gameLogicMap.get("denom").toString()));
+                if (gameLogicMap.containsKey("isHitGrandDaddy")) {
+                    gameLogicCache.setHitGrandDaddy(Boolean.parseBoolean(gameLogicMap.get("isHitGrandDaddy").toString()));
+                }
                 //gameLogicCache.setJackpotGroupCode(slotGameLogicBean.getJackpotGroupCode());
                 gameLogicCache.setLastScenes("slots");
                 gameLogicCache.setConsumedSummation(null);
@@ -230,7 +233,7 @@ public class SlotEngineUtil {
                     SlotSpinResult baseSpinResult;
                     int reelCount = model.getReelCount();
                     input = slotBaseGameRecover(input, recoverInfo, reelCount);
-                    if (input != null && input.getInputPosition() != null) {
+                    if (input != null && input.getInputPosition() != null && !input.getInputPosition().isEmpty()) {
                         log.debug("spin with input or recover");
                         baseSpinResult = model.spin(modelFeature, gameLogicCache, input, recoverInfo);
                     } else {
