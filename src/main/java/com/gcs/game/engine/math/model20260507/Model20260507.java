@@ -12,6 +12,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * CheddarQuestLink game
+ *
+ */
 
 public class Model20260507 extends BaseSlotModel {
 
@@ -56,7 +60,7 @@ public class Model20260507 extends BaseSlotModel {
 
     @Override
     protected String getPayLinesFileName() {
-        return "G3_default_5x3x25_2.properties";
+        return "G3_default_5x3X25_2.properties";
     }
 
     @Override
@@ -136,7 +140,7 @@ public class Model20260507 extends BaseSlotModel {
     private static RandomWeightUntil swRandom = null;
     private static final int WILD_X3 = 3;
     public static final int MIN_TRIGGER_LINK_BONUS = 5;
-    public static final int[] SW_WEIGHT = new int[]{10000, 2500, 1200, 800, 200, 100, 200, 20, 10, 2};
+    public static final int[] SW_WEIGHT = new int[]{4968, 2500, 1200, 800, 200, 100, 200, 20, 10, 2};
     public static final int[] SW_AWARD = new int[]{1, 2, 3, 5, 10, 15, 20, 30, 50, 100};
     public static RandomWeightUntil levelNoRandom = null;
     public static RandomWeightUntil levelLv2Random = null;

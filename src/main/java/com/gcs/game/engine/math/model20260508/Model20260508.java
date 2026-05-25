@@ -57,7 +57,7 @@ public class Model20260508 extends BaseSlotModel {
 
     @Override
     protected String getPayLinesFileName() {
-        return "G3_default_5x3x25_2.properties";
+        return "G3_default_5x3X25_2.properties";
     }
 
     @Override
