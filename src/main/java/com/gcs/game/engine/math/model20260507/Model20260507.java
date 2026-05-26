@@ -154,16 +154,16 @@ public class Model20260507 extends BaseSlotModel {
     public static final int[] LEVEL_NO_UNLOCK = new int[]{930, 70};
     public static final int[] LEVEL_LV2_UNLOCK = new int[]{950, 50};
     public static final int[] LEVEL_LV1_UNLOCK = new int[]{950, 50};
-    public static final int[] LEVEL_LV0_UNLOCK = new int[]{980, 20};
+    public static final int[] LEVEL_LV0_UNLOCK = new int[]{963, 37};
 
     protected int[] getBaseReelsWeight(int payBack) {
-        int[] baseReelsWeight = new int[]{594, 406};
+        int[] baseReelsWeight = new int[]{600, 400};
         switch (payBack) {
-            case 8806:
-                baseReelsWeight = new int[]{594, 406};
+            case 8794:
+                baseReelsWeight = new int[]{600, 400};
                 break;
-            case 9011:
-                baseReelsWeight = new int[]{840, 160};
+            case 9007:
+                baseReelsWeight = new int[]{290, 710};
                 break;
             default:
                 break;
@@ -174,11 +174,11 @@ public class Model20260507 extends BaseSlotModel {
     protected int[] getFsReelsWeight(int payBack) {
         int[] result = new int[]{100, 900};
         switch (payBack) {
-            case 8806:
+            case 8794:
                 result = new int[]{100, 900};
                 break;
             case 9011:
-                result = new int[]{300, 700};
+                result = new int[]{100, 900};
                 break;
             default:
                 break;
@@ -398,6 +398,7 @@ public class Model20260507 extends BaseSlotModel {
             } else {
                 respinTimes--;
             }
+            activeSwCount = countActiveSwInUnlockedArea(linkBonusDisplaySymbol, unlockedLevel);
         }
         long totalPay = computeBonusAward(gameLogicBean, unlockedLevel, linkBonusDisplaySymbol, activeSwCount, result);
         result.setEndActiveLevel(unlockedLevel);
@@ -433,7 +434,7 @@ public class Model20260507 extends BaseSlotModel {
         }
         result.setSwSymbolsWin(swSymbolsWin);
         //hit GRAND
-        if (activeSwCount == linkBonusDisplaySymbol.length) {
+        if (result.getSwSymbolsWin().size() == linkBonusDisplaySymbol.length) {
             long grandWin = GRANT_AWARD * gameLogicBean.getSumBetCredit();
             totalPay += grandWin;
             result.setGrantWin(grandWin);
