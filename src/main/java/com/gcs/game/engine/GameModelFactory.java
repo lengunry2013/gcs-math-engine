@@ -13,6 +13,8 @@ import com.gcs.game.engine.math.model20260201.Model20260201FSBonus;
 import com.gcs.game.engine.math.model20260507.Model20260507;
 import com.gcs.game.engine.math.model20260508.Model20260508;
 import com.gcs.game.engine.math.model20260520.Model20260520;
+import com.gcs.game.engine.math.model20260530.Model20260530;
+import com.gcs.game.engine.math.model20260530.Model20260530Bonus;
 import com.gcs.game.engine.math.model5070530.Model5070530;
 import com.gcs.game.engine.math.model6060630.Model6060630;
 import com.gcs.game.engine.math.model6060630.Model6060630Bonus;
@@ -122,6 +124,9 @@ public class GameModelFactory {
             case "20260520":
                 model = new Model20260520();
                 break;
+            case "20260530":
+                model = new Model20260530();
+                break;
             default:
                 break;
         }
@@ -140,6 +145,9 @@ public class GameModelFactory {
                 } else if ("bonus2".equalsIgnoreCase(bonusAsset)) {
                     model = new Model20260201Bonus();
                 }
+                break;
+            case "20260530":
+                model = new Model20260530Bonus();
                 break;
             default:
                 break;
