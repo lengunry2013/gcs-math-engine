@@ -8,8 +8,8 @@ import java.util.List;
 @Data
 public class Model20260530SpinResult extends SlotSpinResult {
     private int featureType = -1;
-    private List<Integer> subSymbolPositions = null;
-    private List<Integer> subSymbols = null;
+    private int subSymbolPosition = -1;
+    private int subSymbol = -1;
     private int wildMul = -1;
     //TODO test use
     private int baseScRandomIndex = -1;

@@ -437,43 +437,34 @@ public class Model20260530 extends BaseSlotModel {
         if (randomIndex == 1) {
             long betPerLine = gameLogicBean.getBet();
             long lines = gameLogicBean.getLines();
-            List<Integer> subSymbolPositions = new ArrayList<>();
-            List<Integer> subSymbols = new ArrayList<>();
+            List<SlotSymbolHitResult> allSubSymbolHits = new ArrayList<>();
             for (SlotSymbol symbol : symbols) {
-                //计算2个OAK Win symbol
+                //计算所有可扩展赢的集合
                 if (symbol.getSymbolNumber() >= L1_SYMBOL && symbol.getSymbolNumber() < SCATTER_SYMBOL) {
-                    List<SlotSymbolHitResult> tempList = computeLineSymbol2Left2Right(gameLogicBean, hitList, symbol, displaySymbols, payLinesMap, betPerLine, lines, isSlot);
+                    List<SlotSymbolHitResult> tempList = computeLineSymbol2Left2Right(gameLogicBean, totalPay, symbol, displaySymbols, payLinesMap, betPerLine, lines, isSlot);
                     if (!tempList.isEmpty()) {
-                        //第3列增加symbol
-                        computeSubSymbol(tempList, payLinesMap, subSymbolPositions, subSymbols, 2);
+                        allSubSymbolHits.addAll(tempList);
                     }
                 }
             }
-            if (!hitList.isEmpty()) {
-                List<SlotSymbolHitResult> hit3OakList = computeWinSymbol(hitList, 3);
-                List<SlotSymbolHitResult> hit3OakAddList = getHitAddSymbolList(hit3OakList, hitList, payLinesMap, displaySymbols, isSlot, 3);
-                //第4列增加symbol
-                if (hit3OakAddList != null && !hit3OakAddList.isEmpty()) {
-                    computeSubSymbol(hit3OakAddList, payLinesMap, subSymbolPositions, subSymbols, 3);
-                }
-                List<SlotSymbolHitResult> hit4OakList = computeWinSymbol(hitList, 4);
-                List<SlotSymbolHitResult> hit4OakAddList = getHitAddSymbolList(hit4OakList, hitList, payLinesMap, displaySymbols, isSlot, 4);
-                //第5列增加symbol
-                if (hit4OakAddList != null && !hit4OakAddList.isEmpty()) {
-                    computeSubSymbol(hit4OakAddList, payLinesMap, subSymbolPositions, subSymbols, 4);
-                }
-            }
-            if (!subSymbolPositions.isEmpty()) {
+            if (!allSubSymbolHits.isEmpty()) {
+                int randomSubSymbolIndex = RandomUtil.getRandomInt(allSubSymbolHits.size());
+                SlotSymbolHitResult hitResult = allSubSymbolHits.get(randomSubSymbolIndex);
+                int line = hitResult.getHitLine();
+                int symbolNumber = hitResult.getHitSymbol();
+                int[] linePosition = payLinesMap.get(line);
+                int hitCount = hitResult.getHitCount();
+                int subSymbolPosition = linePosition[hitCount];
                 int[] symbols = displaySymbols.clone();
-                coverWinFeatureSubSymbol(symbols, subSymbolPositions, subSymbols);
+                symbols[subSymbolPosition - 1] = symbolNumber;
                 List<SlotSymbolHitResult> hitResults = computeSymbols(gameLogicBean, symbols, payLinesMap, isSlot);
                 hitResults = filterLineHit(hitResults);
-                long wildAfterTotalPay = computeTotalPay(hitResults);
-                if (wildAfterTotalPay > totalPay) {
+                long winAfterTotalPay = computeTotalPay(hitResults);
+                if (winAfterTotalPay > totalPay) {
                     result.clear();
                     result.addAll(hitResults);
-                    spinResult.setSubSymbols(subSymbols);
-                    spinResult.setSubSymbolPositions(subSymbolPositions);
+                    spinResult.setSubSymbol(symbolNumber);
+                    spinResult.setSubSymbolPosition(subSymbolPosition);
                     if (isSlot) {
                         spinResult.setFeatureType(3);
                     } else {
@@ -518,84 +509,8 @@ public class Model20260530 extends BaseSlotModel {
         return isScFlag;
     }
 
-    private void coverWinFeatureSubSymbol(int[] symbols, List<Integer> subSymbolPositions, List<Integer> subSymbols) {
-        for (int i = 0; i < subSymbolPositions.size(); i++) {
-            int positionIndex = subSymbolPositions.get(i) - 1;
-            symbols[positionIndex] = subSymbols.get(i);
-        }
-    }
-
-    private List<SlotSymbolHitResult> getHitAddSymbolList(List<SlotSymbolHitResult> hitOakList, List<SlotSymbolHitResult> hitList, Map<Integer, int[]> payLinesMap, int[] displaySymbols, boolean isSlot, int subIndex) {
-        if (hitOakList != null && !hitOakList.isEmpty()) {
-            List<SlotSymbolHitResult> tempList = new ArrayList<>(hitList);
-            tempList.removeAll(hitOakList);
-            List<SlotSymbolHitResult> resultList = new ArrayList<>();
-            for (SlotSymbolHitResult hit3Oak : hitOakList) {
-                boolean isAddHit = true;
-                int symbolNumber = hit3Oak.getHitSymbol();
-                int line = hit3Oak.getHitLine();
-                int reelPosition = payLinesMap.get(line)[subIndex];
-                for (SlotSymbolHitResult hit : tempList) {
-                    int[] winPosition = hit.getHitPosition();
-                    //扩展的位置已经被更大的奖金占用，此时就不去添加
-                    if (hit.getHitSymbol() < symbolNumber && contains(winPosition, reelPosition)) {
-                        isAddHit = false;
-                        break;
-                    }
-                }
-                //fs scatter symbol不能覆盖
-                if (!isSlot && displaySymbols[reelPosition - 1] == FS_SCATTER_SYMBOL) {
-                    isAddHit = false;
-                }
-                if (isAddHit) {
-                    resultList.add(hit3Oak);
-                }
-            }
-            return resultList;
-        }
-        return null;
-    }
-
-    private List<SlotSymbolHitResult> computeWinSymbol(List<SlotSymbolHitResult> hitList, int winSymbolCount) {
-        List<SlotSymbolHitResult> winResult = new ArrayList<>();
-        for (SlotSymbolHitResult hit : hitList) {
-            int symbolNumber = hit.getHitSymbol();
-            if (hit.getHitCount() == winSymbolCount &&
-                    symbolNumber >= L1_SYMBOL && symbolNumber < SCATTER_SYMBOL) {
-                winResult.add(hit);
-            }
-        }
-        return winResult;
-    }
-
-    private void computeSubSymbol(List<SlotSymbolHitResult> tempList, Map<Integer, int[]> payLinesMap, List<Integer> subSymbolPositions, List<Integer> subSymbols, int subIndex) {
-        if (!subSymbolPositions.isEmpty()) {
-            for (int position : subSymbolPositions) {
-                for (SlotSymbolHitResult hitResult : tempList) {
-                    int line = hitResult.getHitLine();
-                    int[] linePosition = payLinesMap.get(line);
-                    int subPosition = linePosition[subIndex];
-                    //如果扩展位置被替换过了，那么需要移除
-                    if (position == subPosition) {
-                        tempList.remove(hitResult);
-                        break;
-                    }
-                }
-            }
-        }
-        if (!tempList.isEmpty()) {
-            int randomIndex = RandomUtil.getRandomInt(tempList.size());
-            SlotSymbolHitResult hitResult = tempList.get(randomIndex);
-            int line = hitResult.getHitLine();
-            int[] linePosition = payLinesMap.get(line);
-            subSymbolPositions.add(linePosition[subIndex]);
-            subSymbols.add(hitResult.getHitSymbol());
-        }
-    }
-
-    protected List<SlotSymbolHitResult> computeLineSymbol2Left2Right(SlotGameLogicBean gameLogicBean, List<SlotSymbolHitResult> hitList, SlotSymbol symbol, int[] displaySymbols, Map<Integer, int[]> payLinesMap, long betPerLine, long lines, boolean inSlot) {
+    protected List<SlotSymbolHitResult> computeLineSymbol2Left2Right(SlotGameLogicBean gameLogicBean, long beforeTotalWin, SlotSymbol symbol, int[] displaySymbols, Map<Integer, int[]> payLinesMap, long betPerLine, long lines, boolean isSlot) {
         List<SlotSymbolHitResult> resultList = new ArrayList<>();
-        int minHitCount = 2;
         int symbolNumber = symbol.getSymbolNumber();
         int[] wildSymbols = symbol.getWildSymbols();
         for (int i = 0; i < lines; i++) {
@@ -619,25 +534,23 @@ public class Model20260530 extends BaseSlotModel {
                     break;
                 }
             }
-            if (hitCount == minHitCount) {
-                SlotSymbolHitResult hitResult = setHitResult(gameLogicBean, symbol, symbolNumber, line, betPerLine, hitPosition, hitCount, inSlot);
-                int reel3Position = linePosition[2];
+            if (hitCount >= 2 && hitCount <= 4) {
+                SlotSymbolHitResult hitResult = setHitResult(gameLogicBean, symbol, symbolNumber, line, betPerLine, hitPosition, hitCount, isSlot);
+                int reelPosition = linePosition[hitCount];
                 boolean isAddHit = true;
-                if (!hitList.isEmpty()) {
-                    for (SlotSymbolHitResult hit : hitList) {
-                        int[] winPosition = hit.getHitPosition();
-                        //扩展的位置已经被更大的奖金占用，此时就不去添加
-                        if (hit.getHitSymbol() < symbolNumber && contains(winPosition, reel3Position)) {
-                            isAddHit = false;
-                            break;
-                        }
-                    }
-                }
-                //fs scatter symbol不能覆盖
-                if (!inSlot && displaySymbols[reel3Position - 1] == FS_SCATTER_SYMBOL) {
+                int[] symbols = displaySymbols.clone();
+                symbols[reelPosition - 1] = symbolNumber;
+                List<SlotSymbolHitResult> hitResults = computeSymbols(gameLogicBean, symbols, payLinesMap, isSlot);
+                hitResults = filterLineHit(hitResults);
+                long winAfterTotalPay = computeTotalPay(hitResults);
+                //扩展替换图标后赢的结果小于扩展前的不能添加
+                if (winAfterTotalPay <= beforeTotalWin) {
                     isAddHit = false;
                 }
-                //TODO Scatter
+                //fs scatter symbol不能覆盖
+                if (!isSlot && displaySymbols[reelPosition - 1] == FS_SCATTER_SYMBOL) {
+                    isAddHit = false;
+                }
                 if (isAddHit) {
                     resultList.add(hitResult);
                 }
