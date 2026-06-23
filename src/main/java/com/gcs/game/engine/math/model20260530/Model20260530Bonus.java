@@ -65,7 +65,7 @@ public class Model20260530Bonus extends BaseBonus {
     };
 
     private static final int[] BONUS_WEIGHT = new int[]{
-            10, 20, 2000, 2000, 6000, 6000, 4000, 16000, 4000, 4000,
+            10, 20, 2000, 10000, 10000, 5000, 5000, 16000, 4000, 4000,
             16000, 4000, 16000, 16000, 2000, 16000, 4000, 4000, 16000, 4000,
             16000, 16000, 1000, 2000, 2000, 2000, 2000, 2000, 2000, 2000,
             2000, 200, 200, 200, 200, 200, 200, 200, 200, 200,
@@ -94,7 +94,7 @@ public class Model20260530Bonus extends BaseBonus {
     };
 
     private static final int[][] REWARD_DOUBLE = new int[][]{
-            {4000, 6000}, {7500, 2500}, {9500, 500}
+            {8000, 2000}, {7500, 2500}, {7200, 2800}
     };
     private static final int GROUP_MIN = 10;
     private static final int GROUP_MAX = 50;

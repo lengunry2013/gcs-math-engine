@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,8 +30,8 @@ public class ReelsFileReader {
             if (new File(file).exists()) {
                 properties.loadFromXML(new FileInputStream(file));
             } else {
-                String f = ReelsFileReader.class.getClassLoader().getResource("../../" + file).getPath();
-                properties.loadFromXML(new FileInputStream(f));
+                InputStream is = ReelsFileReader.class.getClassLoader().getResourceAsStream(file);
+                properties.loadFromXML(is);
             }
 
             int reelsCount = Integer.parseInt(
@@ -72,8 +73,8 @@ public class ReelsFileReader {
             if (new File(file).exists()) {
                 properties.loadFromXML(new FileInputStream(file));
             } else {
-                String f = ReelsFileReader.class.getClassLoader().getResource("../../" + file).getPath();
-                properties.loadFromXML(new FileInputStream(f));
+                InputStream is = ReelsFileReader.class.getClassLoader().getResourceAsStream(file);
+                properties.loadFromXML(is);
             }
 
             int reelsCount = Integer.parseInt(

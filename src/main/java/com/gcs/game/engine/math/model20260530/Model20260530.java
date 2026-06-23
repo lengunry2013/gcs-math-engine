@@ -26,34 +26,34 @@ public class Model20260530 extends BaseSlotModel {
             500, 500
     };
     public static final int[] BASE_SC_WEIGHT = new int[]{
-            810, 190
+            790, 210
     };
     public static final int[] BASE_WL_WEIGHT = new int[]{
             820, 180
     };
     public static final int[] BASE_WIN_WEIGHT = new int[]{
-            620, 380
+            600, 400
     };
     public static final int[][] FS_SC_PRIZE = new int[][]{
             {1, 2, 3, 5},
-            {550, 250, 150, 50}
+            {700, 100, 100, 100}
     };
     public static final int[] FS_SC_WEIGHT = new int[]{
-            800, 200
+            860, 140
     };
     public static final int[] FS_WL_WEIGHT = new int[]{
-            745, 255
+            600, 400
     };
     public static final int[][] FS_WL_MUL_WEIGHT = new int[][]{
             {1, 2, 3, 5},
-            {5000, 3000, 1500, 500}
+            {5000, 1000, 3000, 1000}
     };
     public static final int[][] FS_WL_ADD_WEIGHT = new int[][]{
             {1, 2, 3, 4, 5, 6},
-            {300, 500, 2200, 4000, 2000, 1000}
+            {500, 1000, 1500, 4000, 2000, 1000}
     };
     public static final int[] FS_WIN_WEIGHT = new int[]{
-            500, 500
+            800, 200
     };
 
     @Override
@@ -70,7 +70,7 @@ public class Model20260530 extends BaseSlotModel {
     protected long[][] getPayTable() {
         return new long[][]{
                 {0, 0, 0, 0, 0},    // 1
-                {0, 0, 150, 300, 1000},    // 2
+                {0, 0, 150, 300, 1000},  // 2
                 {0, 0, 100, 250, 500},  // 3
                 {0, 0, 60, 150, 300},  // 4
                 {0, 0, 30, 75, 150},  // 5
@@ -321,59 +321,66 @@ public class Model20260530 extends BaseSlotModel {
             //Fs feature 2 WL feature
             boolean isWildFlag = false;
             if (!isScFlag) {
-                int wildCount = getSymbolCount(displaySymbols, WILD_SYMBOL);
-                if (wildCount > 0) {
-                    //**Wild Expand**
-                    isWildFlag = computeWlExpand(gameLogicBean, displaySymbols, result, spinResult, totalPay, payLinesMap, isSlot, FS_WL_WEIGHT);
-                }
-                if (!isWildFlag) {
-                    // branch B：`win_before > 0`
-                    if (totalPay > 0) {
-                        RandomWeightUntil randomWeightUntil = new RandomWeightUntil(FS_WL_MUL_WEIGHT[0], FS_WL_MUL_WEIGHT[1]);
-                        int wildMul = randomWeightUntil.getRandomResult();
-                        spinResult.setWildMul(wildMul);
-                        if (wildMul > 1) {
-                            isWildFlag = true;
-                            computeWildMul(result, wildMul);
-                            spinResult.setFeatureType(3);
-                        }
+                RandomWeightUntil randomWeightUntil = new RandomWeightUntil(FS_WL_WEIGHT);
+                int randomIndex = randomWeightUntil.getRandomResult();
+                spinResult.setFsWlRandomIndex(randomIndex);
+                //feature_WL_expand_decide` = 1
+                if (randomIndex == 1) {
+                    int wildCount = getSymbolCount(displaySymbols, WILD_SYMBOL);
+                    //branch A：if wildnum > 0
+                    if (wildCount > 0) {
+                        //**Wild Expand**
+                        isWildFlag = computeFsWlExpand(gameLogicBean, displaySymbols, result, spinResult, totalPay, payLinesMap, isSlot);
                     }
-                    //branch C：multiplier = 1, or win_before = 0
                     if (!isWildFlag) {
-                        RandomWeightUntil randomWeightUntil = new RandomWeightUntil(FS_WL_ADD_WEIGHT[0], FS_WL_ADD_WEIGHT[1]);
-                        int wildAdd = randomWeightUntil.getRandomResult();
-                        spinResult.setFsWlAddRandomIndex(wildAdd);
-                        List<Integer> expandPosition = new ArrayList<>();
-                        //random select a position on reel 2,3,4 to become wild，**only add once**
-                        for (int i = 1; i < reelsCount() - 1; i++) {
-                            for (int j = 0; j < rowsCount(); j++) {
-                                int index = i + j * reelsCount();
-                                if (displaySymbols[index] != FS_SCATTER_SYMBOL && displaySymbols[index] != WILD_SYMBOL) {
-                                    expandPosition.add(index);
-                                }
+                        // branch B：`win_before > 0`
+                        if (totalPay > 0) {
+                            RandomWeightUntil randomWeightUntil1 = new RandomWeightUntil(FS_WL_MUL_WEIGHT[0], FS_WL_MUL_WEIGHT[1]);
+                            int wildMul = randomWeightUntil1.getRandomResult();
+                            spinResult.setWildMul(wildMul);
+                            if (wildMul > 1) {
+                                isWildFlag = true;
+                                computeWildMul(result, wildMul);
+                                spinResult.setFeatureType(3);
                             }
                         }
-                        if (!expandPosition.isEmpty() && expandPosition.size() > wildAdd) {
-                            int[] random = RandomUtil.getRandomIndex(expandPosition.size(), wildAdd);
-                            List<Integer> wildPosition = new ArrayList<>();
-                            if (random != null) {
-                                for (int index : random) {
-                                    wildPosition.add(expandPosition.get(index));
+                        //branch C：multiplier = 1, or win_before = 0
+                        if (!isWildFlag) {
+                            RandomWeightUntil randomWeightUntil2 = new RandomWeightUntil(FS_WL_ADD_WEIGHT[0], FS_WL_ADD_WEIGHT[1]);
+                            int wildAdd = randomWeightUntil2.getRandomResult();
+                            spinResult.setFsWlAddRandomIndex(wildAdd);
+                            List<Integer> expandPosition = new ArrayList<>();
+                            //random select a position on reel 2,3,4 to become wild，**only add once**
+                            for (int i = 1; i < reelsCount() - 1; i++) {
+                                for (int j = 0; j < rowsCount(); j++) {
+                                    int index = i + j * reelsCount();
+                                    if (displaySymbols[index] != FS_SCATTER_SYMBOL && displaySymbols[index] != WILD_SYMBOL) {
+                                        expandPosition.add(index);
+                                    }
                                 }
                             }
-                            int[] symbols = displaySymbols.clone();
-                            int[] wildPositionArray = StringUtil.ListToIntegerArray(wildPosition);
-                            Arrays.sort(wildPositionArray);
-                            coverDisplaySymbolsByPositions(symbols, wildPositionArray, WILD_SYMBOL);
-                            List<SlotSymbolHitResult> hitResults = computeSymbols(gameLogicBean, symbols, payLinesMap, isSlot);
-                            hitResults = filterLineHit(hitResults);
-                            long wildAfterTotalPay = computeTotalPay(hitResults);
-                            if (wildAfterTotalPay > totalPay) {
-                                isWildFlag = true;
-                                result.clear();
-                                result.addAll(hitResults);
-                                spinResult.setSlotWildPositions(wildPositionArray);
-                                spinResult.setFeatureType(4);
+                            if (!expandPosition.isEmpty() && expandPosition.size() > wildAdd) {
+                                int[] random = RandomUtil.getRandomIndex(expandPosition.size(), wildAdd);
+                                List<Integer> wildPosition = new ArrayList<>();
+                                if (random != null) {
+                                    for (int index : random) {
+                                        wildPosition.add(expandPosition.get(index));
+                                    }
+                                }
+                                int[] symbols = displaySymbols.clone();
+                                int[] wildPositionArray = StringUtil.ListToIntegerArray(wildPosition);
+                                Arrays.sort(wildPositionArray);
+                                coverDisplaySymbolsByPositions(symbols, wildPositionArray, WILD_SYMBOL);
+                                List<SlotSymbolHitResult> hitResults = computeSymbols(gameLogicBean, symbols, payLinesMap, isSlot);
+                                hitResults = filterLineHit(hitResults);
+                                long wildAfterTotalPay = computeTotalPay(hitResults);
+                                if (wildAfterTotalPay > totalPay) {
+                                    isWildFlag = true;
+                                    result.clear();
+                                    result.addAll(hitResults);
+                                    spinResult.setSlotWildPositions(wildPositionArray);
+                                    spinResult.setFeatureType(4);
+                                }
                             }
                         }
                     }
@@ -385,6 +392,24 @@ public class Model20260530 extends BaseSlotModel {
             }
         }
         return result;
+    }
+
+    private boolean computeFsWlExpand(SlotGameLogicBean gameLogicBean, int[] displaySymbols, List<SlotSymbolHitResult> result, Model20260530SpinResult spinResult, long totalPay, Map<Integer, int[]> payLinesMap, boolean isSlot) {
+        boolean isWildFlag = false;
+        int[] wildReels = getWildReels(displaySymbols, isSlot);
+        int[] symbols = displaySymbols.clone();
+        coverDisplaySymbolsByReels(symbols, wildReels, WILD_SYMBOL);
+        List<SlotSymbolHitResult> hitResults = computeSymbols(gameLogicBean, symbols, payLinesMap, isSlot);
+        hitResults = filterLineHit(hitResults);
+        long wildAfterTotalPay = computeTotalPay(hitResults);
+        if (wildAfterTotalPay > totalPay) {
+            isWildFlag = true;
+            result.clear();
+            result.addAll(hitResults);
+            spinResult.setSlotWildReels(wildReels);
+            spinResult.setFeatureType(2);
+        }
+        return isWildFlag;
     }
 
     private void computeWildMul(List<SlotSymbolHitResult> result, int wildMul) {
@@ -557,13 +582,6 @@ public class Model20260530 extends BaseSlotModel {
             }
         }
         return resultList;
-    }
-
-    private boolean contains(int[] array, int target) {
-        for (int num : array) {
-            if (num == target) return true;
-        }
-        return false;
     }
 
     private long computeTotalPay(List<SlotSymbolHitResult> hitList) {
