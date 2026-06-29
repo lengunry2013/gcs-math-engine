@@ -37,6 +37,8 @@ public class SlotBonusResultDeserializer extends JsonDeserializer<SlotBonusResul
         */
         else if (jNode.findValue("pickCharacters") != null) {
             result = objectMapper.treeToValue(jNode, SlotChoiceBonusResult.class);
+        } else if (jNode.findValue("hitLevel") != null) {
+            result = objectMapper.treeToValue(jNode, SlotWheelBonusResult.class);
         }
         /*
         else if (jNode.findValue("pickRoundFlags") != null) {

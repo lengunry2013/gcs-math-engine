@@ -15,7 +15,10 @@ import com.gcs.game.engine.math.model20260508.Model20260508;
 import com.gcs.game.engine.math.model20260520.Model20260520;
 import com.gcs.game.engine.math.model20260530.Model20260530;
 import com.gcs.game.engine.math.model20260530.Model20260530Bonus;
+import com.gcs.game.engine.math.model20260531.Model20260531;
 import com.gcs.game.engine.math.model20260618.Model20260618;
+import com.gcs.game.engine.math.model20260625.Model20260625;
+import com.gcs.game.engine.math.model20260625.Model20260625Bonus;
 import com.gcs.game.engine.math.model5070530.Model5070530;
 import com.gcs.game.engine.math.model6060630.Model6060630;
 import com.gcs.game.engine.math.model6060630.Model6060630Bonus;
@@ -131,6 +134,12 @@ public class GameModelFactory {
             case "20260530":
                 model = new Model20260530();
                 break;
+            case "20260531":
+                model = new Model20260531();
+                break;
+            case "20260625":
+                model = new Model20260625();
+                break;
             default:
                 break;
         }
@@ -152,6 +161,9 @@ public class GameModelFactory {
                 break;
             case "20260530":
                 model = new Model20260530Bonus();
+                break;
+            case "20260625":
+                model = new Model20260625Bonus();
                 break;
             default:
                 break;

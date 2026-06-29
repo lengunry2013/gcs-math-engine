@@ -300,7 +300,7 @@ public class SlotEngineUtil {
             wagerType = CompressUtil.decompressWagerType(Long.parseLong(recoverInfo.getRecoverData()));
             return wagerType;
         }
-        long minBetBalance = model.minLines() * model.minBetPerLine() * gameLogicCache.getDenom();
+        long minBetBalance = model.totalBet(model.minLines(), model.minBetPerLine()) * gameLogicCache.getDenom();
         if (remainBalance < minBetBalance) {
             long saverWeight = remainBalance * 10000 / minBetBalance;
             long[] remainCreditWeight = new long[]{10000 - saverWeight, saverWeight};

@@ -9,7 +9,9 @@ import com.gcs.game.engine.math.model20260507.Model20260507Engine;
 import com.gcs.game.engine.math.model20260508.Model20260508Engine;
 import com.gcs.game.engine.math.model20260520.Model20260520Engine;
 import com.gcs.game.engine.math.model20260530.Model20260530Engine;
+import com.gcs.game.engine.math.model20260531.Model20260531Engine;
 import com.gcs.game.engine.math.model20260618.Model20260618Engine;
+import com.gcs.game.engine.math.model20260625.Model20260625Engine;
 import com.gcs.game.engine.math.model5070530.Model5070530Engine;
 import com.gcs.game.engine.math.model6060630.Model6060630Engine;
 import com.gcs.game.engine.math.model6080630.Model6080630Engine;
@@ -49,6 +51,10 @@ public class GameEngineFactory {
                 return new Model20260618Engine(payback, mmID);
             case "20260530":
                 return new Model20260530Engine(payback, mmID);
+            case "20260531":
+                return new Model20260531Engine(payback, mmID);
+            case "20260625":
+                return new Model20260625Engine(payback, mmID);
             case "6060630":
                 return new Model6060630Engine(payback, mmID);
             case "5070530":

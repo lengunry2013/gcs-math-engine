@@ -32,6 +32,8 @@ public class SlotSpinResult implements Cloneable {
 
     private int[] slotWildPositions = null;
 
+    private int[] hitSlotScatterPay = null;
+
     private long slotPay = 0L;
 
     private boolean triggerFs = false;
