@@ -157,8 +157,8 @@ public class Model20260625 extends BaseSlotModel implements IWildReelsChange {
             case 8800:
                 baseReelsWeight = new int[]{820, 180};
                 break;
-            case 9011:
-                baseReelsWeight = new int[]{840, 160};
+            case 9008:
+                baseReelsWeight = new int[]{820, 180};
                 break;
             default:
                 break;
@@ -170,6 +170,35 @@ public class Model20260625 extends BaseSlotModel implements IWildReelsChange {
 
     protected int[] getScWeight() {
         return SC_WEIGHT;
+    }
+    protected int[] getSc1Weight(int payBack) {
+        int[] sc1TriggerWeight = SC1_TRIGGER_WEIGHT;
+        switch (payBack) {
+            case 8800:
+                sc1TriggerWeight = SC1_TRIGGER_WEIGHT;
+                break;
+            case 9008:
+                sc1TriggerWeight = new int[]{958, 42};
+                break;
+            default:
+                break;
+        }
+        return sc1TriggerWeight;
+    }
+
+    protected int[] getSc2Weight(int payBack) {
+        int[] sc2TriggerWeight = SC2_TRIGGER_WEIGHT;
+        switch (payBack) {
+            case 8800:
+                sc2TriggerWeight = SC2_TRIGGER_WEIGHT;
+                break;
+            case 9008:
+                sc2TriggerWeight = new int[]{958, 42};
+                break;
+            default:
+                break;
+        }
+        return sc2TriggerWeight;
     }
 
     public static final int[] SC1_TRIGGER_WEIGHT = new int[]{961, 39};
@@ -369,7 +398,7 @@ public class Model20260625 extends BaseSlotModel implements IWildReelsChange {
                 }
             } else if (sc1Count > 0) {
                 if (fs1Random == null) {
-                    fs1Random = new RandomWeightUntil(SC1_TRIGGER_WEIGHT);
+                    fs1Random = new RandomWeightUntil(getSc1Weight(gameLogicBean.getPercentage()));
                 }
                 int randomIndex = fs1Random.getRandomResult();
                 if (randomIndex == 1) {
@@ -378,7 +407,7 @@ public class Model20260625 extends BaseSlotModel implements IWildReelsChange {
                 }
             } else if (sc2Count > 0) {
                 if (fs2Random == null) {
-                    fs2Random = new RandomWeightUntil(SC2_TRIGGER_WEIGHT);
+                    fs2Random = new RandomWeightUntil(getSc2Weight(gameLogicBean.getPercentage()));
                 }
                 int randomIndex = fs2Random.getRandomResult();
                 if (randomIndex == 1) {
