@@ -10,8 +10,8 @@ logging:
 # sever port config
 server:
   port: 8099
-  ssl:
-    key-store: classpath:keystore.p12  # 证书位置
-    key-store-password: 87654321   # 你的密码
-    key-store-type: PKCS12
-    key-alias: bigdaddy-alias       # 你的别名
+  #ssl:
+    #key-store: classpath:keystore.p12  # 证书位置
+    #key-store-password: 87654321   # 你的密码
+    #key-store-type: PKCS12
+    #key-alias: bigdaddy-alias       # 你的别名
