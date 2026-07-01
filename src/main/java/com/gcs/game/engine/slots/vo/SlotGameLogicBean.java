@@ -49,6 +49,8 @@ public class SlotGameLogicBean extends BaseGameLogicBean {
     private int baseReelsType = 0;
     //progressive server hit GrandDaddy spin random no win
     private boolean isHitGrandDaddy = false;
+    //progressive server
+    private int hitJackpotLevel = 0;
 
     private Map<String, CollectInfo> summation = new HashMap();
 

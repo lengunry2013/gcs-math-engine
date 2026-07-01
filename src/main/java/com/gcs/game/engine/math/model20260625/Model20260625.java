@@ -5,6 +5,7 @@ import com.gcs.game.engine.slots.model.BaseSlotModel;
 import com.gcs.game.engine.slots.model.IWildReelsChange;
 import com.gcs.game.engine.slots.utils.SlotEngineConstant;
 import com.gcs.game.engine.slots.vo.*;
+import com.gcs.game.utils.CompressUtil;
 import com.gcs.game.utils.RandomWeightUntil;
 import com.gcs.game.utils.StringUtil;
 import com.gcs.game.vo.InputInfo;
@@ -171,6 +172,7 @@ public class Model20260625 extends BaseSlotModel implements IWildReelsChange {
     protected int[] getScWeight() {
         return SC_WEIGHT;
     }
+
     protected int[] getSc1Weight(int payBack) {
         int[] sc1TriggerWeight = SC1_TRIGGER_WEIGHT;
         switch (payBack) {
@@ -231,20 +233,44 @@ public class Model20260625 extends BaseSlotModel implements IWildReelsChange {
                 reels = modelFeatureBean.getOtherSlotReelsMap().get(BASE_REELS_KEY);
                 reelsWeight = modelFeatureBean.getOtherSlotReelsWeightMap().get(BASE_REELS_KEY);
             }
-            int[] stopPosition = randomReelStopPosition(reelsWeight);
+            int[] stopPosition = null;
+            boolean isSlot = true;
+            //progresive jackpot Grand Daddy
+            if (gameLogicBean.isHitGrandDaddy() && gameLogicBean.getHitJackpotLevel() == 5) {
+                do {
+                    stopPosition = randomReelStopPosition(reelsWeight);
+                    int[] displaySymbols = getDisplaySymbols(reels, stopPosition);
+                    displaySymbols = getScChangeDisplaySymbols(displaySymbols, isSlot, gameLogicBean);
+                    baseSpinResult = (Model20260625SpinResult) computeSpin(displaySymbols, stopPosition, gameLogicBean, isSlot);
+                } while (shouldContinueSpin(baseSpinResult));
+            } else if (gameLogicBean.getHitJackpotLevel() > 0) {
+                //progresive jackpot Mini,Minor,Major,BigDaddy
+                do {
+                    stopPosition = randomReelStopPosition(reelsWeight);
+                    int[] displaySymbols = getDisplaySymbols(reels, stopPosition);
+                    displaySymbols = getScChangeDisplaySymbols(displaySymbols, isSlot, gameLogicBean);
+                    baseSpinResult = (Model20260625SpinResult) computeSpin(displaySymbols, stopPosition, gameLogicBean, isSlot);
+                } while (!baseSpinResult.isTriggerBonus());
+            } else {
+                stopPosition = randomReelStopPosition(reelsWeight);
+                int[] displaySymbols = getDisplaySymbols(reels, stopPosition);
+                displaySymbols = getScChangeDisplaySymbols(displaySymbols, isSlot, gameLogicBean);
+                baseSpinResult = (Model20260625SpinResult) computeSpin(displaySymbols, stopPosition, gameLogicBean, isSlot);
+            }
+
             this.currentReels = reels;
             this.currentReelsWeight = reelsWeight;
             this.currentStopPosition = stopPosition;
-
-            boolean isSlot = true;
-            int[] displaySymbols = getDisplaySymbols(reels, stopPosition);
-            displaySymbols = getScChangeDisplaySymbols(displaySymbols, isSlot, gameLogicBean);
-            baseSpinResult = (Model20260625SpinResult) computeSpin(displaySymbols, stopPosition, gameLogicBean, isSlot);
             gameLogicBean.setBaseReelsType(randomIndex);
         }
         return baseSpinResult;
     }
 
+    private boolean shouldContinueSpin(Model20260625SpinResult result) {
+        return result.getSlotPay() != 0      // 有赔付
+                || result.isTriggerFs()        // 触发免费旋转
+                || !result.isTriggerBonus();   // 未触发Bonus
+    }
 
     /**
      * spin in slot with input.
@@ -255,17 +281,39 @@ public class Model20260625 extends BaseSlotModel implements IWildReelsChange {
      * @return
      */
     public SlotSpinResult spin(SlotGameFeatureVo modelFeatureBean, SlotGameLogicBean gameLogicBean, InputInfo inputFeedBean, RecoverInfo recoverInfo) {
-        SlotSpinResult baseSpinResult = null;
+        Model20260625SpinResult baseSpinResult = null;
         if (modelFeatureBean != null) {
             int[][] reels = getReels(modelFeatureBean, gameLogicBean);
             int[][] reelsWeight = getReelsWeight(modelFeatureBean, gameLogicBean);
-            if (reels == null) {
-                reels = modelFeatureBean.getSlotReels();
+            int randomIndex = 0;
+            if (recoverInfo != null) {
+                int[] position = new int[reelsCount()];
+                int[] reelsType = new int[1];
+                String recoverData = recoverInfo.getRecoverData();
+                String firstPart = recoverData.substring(0, 16);
+                long firstCompressed = Long.parseUnsignedLong(firstPart, 16);
+                CompressUtil.decompressFrom2Long(firstCompressed, position, reelsType);
+                randomIndex = reelsType[0];
+                if (randomIndex == 1) {
+                    reels = modelFeatureBean.getOtherSlotReelsMap().get(BASE_REELS_KEY);
+                    reelsWeight = modelFeatureBean.getOtherSlotReelsWeightMap().get(BASE_REELS_KEY);
+                }
+                gameLogicBean.setBaseReelsType(randomIndex);
+            } else {
+                if (inputFeedBean != null) {
+                    randomIndex = inputFeedBean.getReelsType();
+                } else {
+                    if (baseReelsRandom == null) {
+                        baseReelsRandom = new RandomWeightUntil(getBaseReelsWeight(gameLogicBean.getPercentage()));
+                    }
+                    randomIndex = baseReelsRandom.getRandomResult();
+                }
+                if (randomIndex == 1) {
+                    reels = modelFeatureBean.getOtherSlotReelsMap().get(BASE_REELS_KEY);
+                    reelsWeight = modelFeatureBean.getOtherSlotReelsWeightMap().get(BASE_REELS_KEY);
+                }
+                gameLogicBean.setBaseReelsType(randomIndex);
             }
-            if (reelsWeight == null) {
-                reelsWeight = modelFeatureBean.getSlotReelsWeight();
-            }
-            //TODO Recover baseReelsType
             int[] stopPosition = null;
             if (inputFeedBean != null && inputFeedBean.getInputPosition() != null && !inputFeedBean.getInputPosition().isEmpty()) {
                 stopPosition = inputFeedBean.getInputPosition().get(0);
@@ -279,11 +327,24 @@ public class Model20260625 extends BaseSlotModel implements IWildReelsChange {
 
             boolean isSlot = true;
             int[] displaySymbols = getDisplaySymbols(reels, stopPosition);
-            //TODO SC Random displaySymbols
             if (recoverInfo != null) {
-                baseSpinResult = computeSpin(displaySymbols, stopPosition, gameLogicBean, isSlot, recoverInfo);
+                String decodedSecondPart = recoverInfo.getRecoverData().substring(16, 32);
+                long decodedSecondLong = Long.parseUnsignedLong(decodedSecondPart, 16);
+                int[] scSymbols = new int[5];
+                int[] scTriggerIndex = new int[1];
+                CompressUtil.decompressFromLong(decodedSecondLong, scSymbols, scTriggerIndex);
+                for (int i = 0; i < reelsCount(); i++) {
+                    for (int j = 0; j < rowsCount(); j++) {
+                        if (displaySymbols[i + j * reelsCount()] == SC1_SYMBOL && scSymbols[i] > 0) {
+                            displaySymbols[i + j * reelsCount()] = scSymbols[i];
+                            break;
+                        }
+                    }
+                }
+                baseSpinResult = (Model20260625SpinResult) computeSpin(displaySymbols, stopPosition, gameLogicBean, isSlot, recoverInfo);
             } else {
-                baseSpinResult = computeSpin(displaySymbols, stopPosition, gameLogicBean, isSlot);
+                displaySymbols = getScChangeDisplaySymbols(displaySymbols, isSlot, gameLogicBean);
+                baseSpinResult = (Model20260625SpinResult) computeSpin(displaySymbols, stopPosition, gameLogicBean, isSlot);
             }
         }
         return baseSpinResult;
@@ -377,14 +438,20 @@ public class Model20260625 extends BaseSlotModel implements IWildReelsChange {
         computeLineMultiplier(displaySymbols, hitList, isSlot, gameLogicBean);
         //baseGame Trigger Fs
         if (isSlot) {
+            //save first long recover data
+            long firstPart = CompressUtil.compressToLong(stopPosition, gameLogicBean.getBaseReelsType());
+            String firstRecoverData = String.format("%016x", firstPart);
             int fsType = -1;
             int sc1Count = computeScPosition(displaySymbols, SC1_SYMBOL);
             int sc2Count = computeScPosition(displaySymbols, SC2_SYMBOL);
+            //second recoverData
+            int[] scSymbol = computeScSymbol(displaySymbols);
+            int randomIndex = -1;
             if (sc1Count > 0 && sc2Count > 0) {
                 if (fs3Random == null) {
                     fs3Random = new RandomWeightUntil(SC12_TRIGGER_WEIGHT);
                 }
-                int randomIndex = fs3Random.getRandomResult();
+                randomIndex = fs3Random.getRandomResult();
                 if (randomIndex > 0) {
                     fsType = randomIndex;
                 }
@@ -396,11 +463,12 @@ public class Model20260625 extends BaseSlotModel implements IWildReelsChange {
                     int scatterCount = sc1Count + sc2Count;
                     setHitScatter(SC1_SYMBOL, scatterCount, displaySymbols, fsType, hitList);
                 }
+
             } else if (sc1Count > 0) {
                 if (fs1Random == null) {
                     fs1Random = new RandomWeightUntil(getSc1Weight(gameLogicBean.getPercentage()));
                 }
-                int randomIndex = fs1Random.getRandomResult();
+                randomIndex = fs1Random.getRandomResult();
                 if (randomIndex == 1) {
                     fsType = FS_EXTEND_REELS;
                     setHitScatter(SC1_SYMBOL, sc1Count, displaySymbols, fsType, hitList);
@@ -409,13 +477,18 @@ public class Model20260625 extends BaseSlotModel implements IWildReelsChange {
                 if (fs2Random == null) {
                     fs2Random = new RandomWeightUntil(getSc2Weight(gameLogicBean.getPercentage()));
                 }
-                int randomIndex = fs2Random.getRandomResult();
+                randomIndex = fs2Random.getRandomResult();
                 if (randomIndex == 1) {
                     fsType = FS_JACKPOT_BONUS;
                     setHitScatter(SC2_SYMBOL, sc2Count, displaySymbols, fsType, hitList);
                 }
             }
             result.setFsType(fsType);
+            //second part recover data
+            int scType = randomIndex + 1;
+            long secondPart = CompressUtil.compressToLong(scSymbol, scType);
+            String secondRecoverData = String.format("%016x", secondPart);
+            result.setRecoverData(firstRecoverData + secondRecoverData);
         } else {
             //Fs random SC feature
             Model20260625SpinResult baseSpinResult = (Model20260625SpinResult) gameLogicBean.getSlotSpinResult();
@@ -426,15 +499,19 @@ public class Model20260625 extends BaseSlotModel implements IWildReelsChange {
             }
             List<Integer> scPositions = computeFsScPosition(displaySymbols, scSymbol);
             int[] hitScatterPay = new int[displaySymbols.length];
+            int[] scIndex = new int[displaySymbols.length];
             if (!scPositions.isEmpty()) {
                 RandomWeightUntil randomWeightUntil = new RandomWeightUntil(SC_AWARD_WEIGHT[fsType - 1]);
                 for (int position : scPositions) {
                     int scAwardIndex = randomWeightUntil.getRandomResult();
                     int scAward = setFsHitScatter(gameLogicBean, scAwardIndex, position, scSymbol, hitList);
                     hitScatterPay[position - 1] = scAward;
+                    scIndex[position - 1] = scAwardIndex;
                 }
             }
             result.setHitSlotScatterPay(hitScatterPay);
+            String recoverData = CompressUtil.compressToString(stopPosition, scIndex);
+            result.setRecoverData(recoverData);
         }
 
         int baseGameMultiplier = computeBaseGameMultiplier(displaySymbols, hitList, isSlot, gameLogicBean);
@@ -448,6 +525,160 @@ public class Model20260625 extends BaseSlotModel implements IWildReelsChange {
             result.setFsMul(freeSpinMultiplier);
         }
         return result;
+    }
+
+    protected SlotSpinResult computeSpinResult(int[] stopPosition, int[] displaySymbols, Map<Integer, int[]> payLinesMap, SlotGameLogicBean gameLogicBean, boolean isSlot, RecoverInfo recoverInfo) {
+        Model20260625SpinResult result = new Model20260625SpinResult();
+
+        List<SlotSymbolHitResult> hitList = computeSymbols(gameLogicBean, displaySymbols, payLinesMap, isSlot);
+        hitList = filterLineHit(hitList);
+        computeLineMultiplier(displaySymbols, hitList, isSlot, gameLogicBean);
+        if (isSlot) {
+            int fsType = -1;
+            int sc1Count = computeScPosition(displaySymbols, SC1_SYMBOL);
+            int sc2Count = computeScPosition(displaySymbols, SC2_SYMBOL);
+            //second recoverData
+            int[] scSymbol = computeScSymbol(displaySymbols);
+            int randomIndex = -1;
+            if (sc1Count > 0 && sc2Count > 0) {
+                if (fs3Random == null) {
+                    fs3Random = new RandomWeightUntil(SC12_TRIGGER_WEIGHT);
+                }
+                if (recoverInfo != null) {
+                    int scType = decodeBaseScRecover(recoverInfo);
+                    randomIndex = scType - 1;
+                } else {
+                    randomIndex = fs3Random.getRandomResult();
+                }
+                if (randomIndex > 0) {
+                    fsType = randomIndex;
+                }
+                if (randomIndex == FS_EXTEND_REELS) {
+                    setHitScatter(SC1_SYMBOL, sc1Count, displaySymbols, fsType, hitList);
+                } else if (randomIndex == FS_JACKPOT_BONUS) {
+                    setHitScatter(SC2_SYMBOL, sc2Count, displaySymbols, fsType, hitList);
+                } else if (randomIndex == FS_SUPER_BONUS) {
+                    int scatterCount = sc1Count + sc2Count;
+                    setHitScatter(SC1_SYMBOL, scatterCount, displaySymbols, fsType, hitList);
+                }
+
+            } else if (sc1Count > 0) {
+                if (fs1Random == null) {
+                    fs1Random = new RandomWeightUntil(getSc1Weight(gameLogicBean.getPercentage()));
+                }
+                if (recoverInfo != null) {
+                    int scType = decodeBaseScRecover(recoverInfo);
+                    randomIndex = scType - 1;
+                } else {
+                    randomIndex = fs1Random.getRandomResult();
+                }
+                if (randomIndex == 1) {
+                    fsType = FS_EXTEND_REELS;
+                    setHitScatter(SC1_SYMBOL, sc1Count, displaySymbols, fsType, hitList);
+                }
+            } else if (sc2Count > 0) {
+                if (fs2Random == null) {
+                    fs2Random = new RandomWeightUntil(getSc2Weight(gameLogicBean.getPercentage()));
+                }
+                if (recoverInfo != null) {
+                    int scType = decodeBaseScRecover(recoverInfo);
+                    randomIndex = scType - 1;
+                } else {
+                    randomIndex = fs2Random.getRandomResult();
+                }
+                if (randomIndex == 1) {
+                    fsType = FS_JACKPOT_BONUS;
+                    setHitScatter(SC2_SYMBOL, sc2Count, displaySymbols, fsType, hitList);
+                }
+            }
+            result.setFsType(fsType);
+            //second part recover data
+            if (recoverInfo != null) {
+                result.setRecoverData(recoverInfo.getRecoverData());
+            } else {
+                //save first long recover data
+                long firstPart = CompressUtil.compressToLong(stopPosition, gameLogicBean.getBaseReelsType());
+                String firstRecoverData = String.format("%016x", firstPart);
+                //save second recover data
+                int scType = randomIndex + 1;
+                long secondPart = CompressUtil.compressToLong(scSymbol, scType);
+                String secondRecoverData = String.format("%016x", secondPart);
+                result.setRecoverData(firstRecoverData + secondRecoverData);
+            }
+        } else {
+            //Fs random SC feature
+            Model20260625SpinResult baseSpinResult = (Model20260625SpinResult) gameLogicBean.getSlotSpinResult();
+            int fsType = baseSpinResult.getFsType();
+            int scSymbol = SC1_SYMBOL;
+            if (fsType == FS_JACKPOT_BONUS) {
+                scSymbol = SC2_SYMBOL;
+            }
+            List<Integer> scPositions = computeFsScPosition(displaySymbols, scSymbol);
+            int[] hitScatterPay = new int[displaySymbols.length];
+            int[] scIndex = new int[displaySymbols.length];
+            if (!scPositions.isEmpty()) {
+                if (recoverInfo != null) {
+                    CompressUtil.decompressFromString(recoverInfo.getRecoverData(), stopPosition, scIndex);
+                    for (int position : scPositions) {
+                        int scAwardIndex = scIndex[position - 1];
+                        int scAward = setFsHitScatter(gameLogicBean, scAwardIndex, position, scSymbol, hitList);
+                        hitScatterPay[position - 1] = scAward;
+                        scIndex[position - 1] = scAwardIndex;
+                    }
+                    result.setRecoverData(recoverInfo.getRecoverData());
+                } else {
+                    RandomWeightUntil randomWeightUntil = new RandomWeightUntil(SC_AWARD_WEIGHT[fsType - 1]);
+                    for (int position : scPositions) {
+                        int scAwardIndex = randomWeightUntil.getRandomResult();
+                        int scAward = setFsHitScatter(gameLogicBean, scAwardIndex, position, scSymbol, hitList);
+                        hitScatterPay[position - 1] = scAward;
+                        scIndex[position - 1] = scAwardIndex;
+                    }
+                    String recoverData = CompressUtil.compressToString(stopPosition, scIndex);
+                    result.setRecoverData(recoverData);
+                }
+            }
+            result.setHitSlotScatterPay(hitScatterPay);
+        }
+        int baseGameMultiplier = 1;
+        int freeSpinMultiplier = computeFreeSpinMultiplier(displaySymbols, hitList, isSlot, gameLogicBean);
+
+        result = (Model20260625SpinResult) transferHitList(result, hitList, displaySymbols, stopPosition);
+        if (isSlot) {
+            result.setBaseGameMul(baseGameMultiplier);
+        }
+        if (!isSlot) {
+            result.setFsMul(freeSpinMultiplier);
+        }
+        return result;
+    }
+
+    private int decodeBaseScRecover(RecoverInfo recoverInfo) {
+        String decodedSecondPart = recoverInfo.getRecoverData().substring(16, 32);
+        long decodedSecondLong = Long.parseUnsignedLong(decodedSecondPart, 16);
+        int[] scSymbols = new int[5];
+        int[] scTriggerIndex = new int[1];
+        CompressUtil.decompressFromLong(decodedSecondLong, scSymbols, scTriggerIndex);
+        return scTriggerIndex[0];
+    }
+
+    private int[] computeScSymbol(int[] displaySymbols) {
+        int reelsCount = reelsCount();
+        int rowCount = rowsCount();
+        int[] scSymbol = new int[reelsCount];
+        for (int i = 0; i < reelsCount; i++) {
+            for (int j = 0; j < rowCount; j++) {
+                if (displaySymbols[i + j * reelsCount] == SC1_SYMBOL) {
+                    scSymbol[i] = SC1_SYMBOL;
+                    break;
+                }
+                if (displaySymbols[i + j * reelsCount] == SC2_SYMBOL) {
+                    scSymbol[i] = SC2_SYMBOL;
+                    break;
+                }
+            }
+        }
+        return scSymbol;
     }
 
     protected List<SlotSymbolHitResult> computeSymbols(SlotGameLogicBean gameLogicBean, int[] displaySymbols, Map<Integer, int[]> payLinesMap, boolean isSlot) {

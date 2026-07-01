@@ -27,6 +27,9 @@ public abstract class BaseWheelBonus extends BaseBonus {
         int betLevel = (int) (gameSessionBean.getBet() - 1);
         int[] awardWeights = getWheelAwardWeight()[betLevel];
         int randomIndex = RandomUtil.getRandomIndexFromArrayWithWeight(awardWeights);
+        if (gameSessionBean.getHitJackpotLevel() > 0) {
+            randomIndex = gameSessionBean.getHitJackpotLevel() - 1;
+        }
         result.setBonusPlayStatus(bonusStatus);
         result.setPickIndexInfos(pickIndexs);
         result.setTotalPay(totalPay);
@@ -74,6 +77,11 @@ public abstract class BaseWheelBonus extends BaseBonus {
         if (playerInfo != null) {
             reqPickIndex = playerInfo.getBonusPickInfos();
         }
+        if (recoverInfo != null) {
+            int recoverData = Integer.parseInt(recoverInfo.getRecoverData());
+            reqPickIndex = new int[]{recoverData};
+        }
+
         SlotWheelBonusResult result = null;
         long totalPay = 0;
         long payForPick = 0;

@@ -12,8 +12,13 @@ public class InputInfo {
     private List<Integer> inputDealerCards;
     private List<int[]> inputPosition = null;
 
+    /**
+     * baseGame random reels type
+     */
+    private int reelsType;
+
     private int[] pickCharacters = null;
 
-    private String bonusWinPattern="";
+    private String bonusWinPattern = "";
 
 }
