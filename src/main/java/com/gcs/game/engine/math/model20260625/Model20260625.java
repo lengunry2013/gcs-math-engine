@@ -267,9 +267,9 @@ public class Model20260625 extends BaseSlotModel implements IWildReelsChange {
     }
 
     private boolean shouldContinueSpin(Model20260625SpinResult result) {
-        return result.getSlotPay() != 0      // 有赔付
-                || result.isTriggerFs()        // 触发免费旋转
-                || !result.isTriggerBonus();   // 未触发Bonus
+        return result.getSlotPay() != 0
+                || result.isTriggerFs()
+                || !result.isTriggerBonus();
     }
 
     /**
@@ -341,7 +341,10 @@ public class Model20260625 extends BaseSlotModel implements IWildReelsChange {
                         }
                     }
                 }
-                baseSpinResult = (Model20260625SpinResult) computeSpin(displaySymbols, stopPosition, gameLogicBean, isSlot, recoverInfo);
+                baseSpinResult = (Model20260625SpinResult) computeSpin(displaySymbols, stopPosition, gameLogicBean, isSlot, recoverInfo, inputFeedBean);
+            } else if (inputFeedBean != null) {
+                displaySymbols = getScChangeDisplaySymbols(displaySymbols, isSlot, gameLogicBean);
+                baseSpinResult = (Model20260625SpinResult) computeSpin(displaySymbols, stopPosition, gameLogicBean, isSlot, recoverInfo, inputFeedBean);
             } else {
                 displaySymbols = getScChangeDisplaySymbols(displaySymbols, isSlot, gameLogicBean);
                 baseSpinResult = (Model20260625SpinResult) computeSpin(displaySymbols, stopPosition, gameLogicBean, isSlot);
@@ -421,8 +424,8 @@ public class Model20260625 extends BaseSlotModel implements IWildReelsChange {
             } else {
                 displaySymbols = getDisplaySymbols(reels, stopPosition);
             }
-            if (recoverInfo != null) {
-                baseSpinResult = computeSpin(displaySymbols, stopPosition, gameLogicBean, isSlot, recoverInfo);
+            if (recoverInfo != null || inputFeedBean != null) {
+                baseSpinResult = computeSpin(displaySymbols, stopPosition, gameLogicBean, isSlot, recoverInfo, inputFeedBean);
             } else {
                 baseSpinResult = computeSpin(displaySymbols, stopPosition, gameLogicBean, isSlot);
             }
@@ -527,7 +530,7 @@ public class Model20260625 extends BaseSlotModel implements IWildReelsChange {
         return result;
     }
 
-    protected SlotSpinResult computeSpinResult(int[] stopPosition, int[] displaySymbols, Map<Integer, int[]> payLinesMap, SlotGameLogicBean gameLogicBean, boolean isSlot, RecoverInfo recoverInfo) {
+    protected SlotSpinResult computeSpinResult(int[] stopPosition, int[] displaySymbols, Map<Integer, int[]> payLinesMap, SlotGameLogicBean gameLogicBean, boolean isSlot, RecoverInfo recoverInfo, InputInfo inputInfo) {
         Model20260625SpinResult result = new Model20260625SpinResult();
 
         List<SlotSymbolHitResult> hitList = computeSymbols(gameLogicBean, displaySymbols, payLinesMap, isSlot);
@@ -547,6 +550,8 @@ public class Model20260625 extends BaseSlotModel implements IWildReelsChange {
                 if (recoverInfo != null) {
                     int scType = decodeBaseScRecover(recoverInfo);
                     randomIndex = scType - 1;
+                } else if (inputInfo != null && inputInfo.getScTriggerIndex() != null) {
+                    randomIndex = inputInfo.getScTriggerIndex();
                 } else {
                     randomIndex = fs3Random.getRandomResult();
                 }
@@ -569,6 +574,8 @@ public class Model20260625 extends BaseSlotModel implements IWildReelsChange {
                 if (recoverInfo != null) {
                     int scType = decodeBaseScRecover(recoverInfo);
                     randomIndex = scType - 1;
+                } else if (inputInfo != null && inputInfo.getScTriggerIndex() != null) {
+                    randomIndex = inputInfo.getScTriggerIndex();
                 } else {
                     randomIndex = fs1Random.getRandomResult();
                 }
@@ -583,6 +590,8 @@ public class Model20260625 extends BaseSlotModel implements IWildReelsChange {
                 if (recoverInfo != null) {
                     int scType = decodeBaseScRecover(recoverInfo);
                     randomIndex = scType - 1;
+                } else if (inputInfo != null && inputInfo.getScTriggerIndex() != null) {
+                    randomIndex = inputInfo.getScTriggerIndex();
                 } else {
                     randomIndex = fs2Random.getRandomResult();
                 }
@@ -875,7 +884,7 @@ public class Model20260625 extends BaseSlotModel implements IWildReelsChange {
         return baseSpinResult;
     }
 
-    protected SlotSpinResult computeSpin(int[] displaySymbols, int[] stopPosition, SlotGameLogicBean gameLogicBean, boolean isSlot, RecoverInfo recoverInfo) {
+    protected SlotSpinResult computeSpin(int[] displaySymbols, int[] stopPosition, SlotGameLogicBean gameLogicBean, boolean isSlot, RecoverInfo recoverInfo, InputInfo inputInfo) {
         SlotSpinResult baseSpinResult;
         Map<Integer, int[]> payLinesMap = getPayLines();
 
@@ -891,8 +900,8 @@ public class Model20260625 extends BaseSlotModel implements IWildReelsChange {
             int wildSymbolNo = ((IWildReelsChange) this).wildSymbolNo();
             coverDisplaySymbolsByWildReels(gameLogicBean, displaySymbols, wildReels, wildSymbolNo);
         }
-        if (recoverInfo != null) {
-            baseSpinResult = computeSpinResult(stopPosition, displaySymbols, payLinesMap, gameLogicBean, isSlot, recoverInfo);
+        if (recoverInfo != null || inputInfo != null) {
+            baseSpinResult = computeSpinResult(stopPosition, displaySymbols, payLinesMap, gameLogicBean, isSlot, recoverInfo, inputInfo);
         } else {
             baseSpinResult = computeSpinResult(stopPosition, displaySymbols, payLinesMap, gameLogicBean, isSlot);
         }
