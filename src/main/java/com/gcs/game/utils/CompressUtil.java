@@ -116,8 +116,9 @@ public class CompressUtil {
 
     /**
      * 固定使用3个long压缩数据
+     *
      * @param fsPosition 5个值，每个0-255
-     * @param scIndex 15或30个值，每个0-15
+     * @param scIndex    15或30个值，每个0-15
      * @return 压缩后的3个long数组
      */
     public static long[] compressTo3Longs(int[] fsPosition, int[] scIndex) {
@@ -234,8 +235,14 @@ public class CompressUtil {
     public static String compressToString(int[] fsPosition, int[] scIndex) {
         long[] compressed = compressTo3Longs(fsPosition, scIndex);
         StringBuilder result = new StringBuilder();
+        int index = 0;
         for (long value : compressed) {
-            result.append(String.format("%016x", value));
+            if (index == 2) {
+                result.append(value);
+            } else {
+                result.append(value).append("a");
+            }
+            index++;
         }
         return result.toString();
     }
@@ -246,37 +253,34 @@ public class CompressUtil {
     public static void decompressFromString(String recoverData,
                                             int[] fsPosition,
                                             int[] scIndex) {
-        if (recoverData.length() != 48) { // 3个long × 16位十六进制 = 48
-            throw new IllegalArgumentException("RecoverData长度必须为48，当前长度: " + recoverData.length());
+        String[] recoverDataStr = recoverData.split("a");
+        if (recoverDataStr.length < 3) {
+            throw new IllegalArgumentException("recoverData 数据不对");
         }
-
         long[] compressed = new long[3];
         for (int i = 0; i < 3; i++) {
-            int start = i * 16;
-            String part = recoverData.substring(start, start + 16);
-            compressed[i] = Long.parseUnsignedLong(part, 16);
+            compressed[i] = Long.parseLong(recoverDataStr[i]);
         }
-
         decompressFrom3Longs(compressed, fsPosition, scIndex);
     }
 
     public static void main(String[] args) {
-        /*int[] slotReelStopPosition = {31, 20, 3, 22, 1};
+        int[] slotReelStopPosition = {0, 32, 3, 22, 1};
         int baseGameMul = 1;
-        int[] scSymbol = new int[]{0, 12, 13, 0, 12};
+        int[] scSymbol = new int[]{12, 12, 13, 0, 12};
         int scTriggerIndex = 2;
         long firstPart = compressToLong(slotReelStopPosition, baseGameMul);
-        System.out.println("slots压缩后的long值: " + String.format("%016x", firstPart));
+        String firstPartStr = String.valueOf(firstPart);
+        System.out.println("slots压缩第1个long值: " + firstPart);
         long secondPart = compressToLong(scSymbol, scTriggerIndex);
-        String recoverData = String.format("%016x", firstPart) + String.format("%016x", secondPart);
-        String secondPart2 = recoverData.substring(16, 32);
-        long secondLong2 = Long.parseUnsignedLong(secondPart2, 16);
-        long finalSecondPart = compressToLong(secondLong2, 2);
-        System.out.println("slots压缩最终结果: " + String.format("%016x", finalSecondPart));
-        recoverData = String.format("%016x", firstPart) + String.format("%016x", finalSecondPart);
+        //String recoverData = String.format("%016x", firstPart) + String.format("%016x", secondPart);
+        String secondPartStr = String.valueOf(secondPart);
+        System.out.println("slots压缩第2个long值: " + secondPartStr);
+        long finalSecondPart = compressToLong(secondPart, 2);
+        String recoverData = firstPartStr + secondPartStr;
         System.out.println("最后压缩的数据recoverData: " + recoverData);
         // 解压缩验证
-        String decodedFirstPart = recoverData.substring(0, 16);
+        /*String decodedFirstPart = recoverData.substring(0, 16);
         long decodedFirstLong = Long.parseUnsignedLong(decodedFirstPart, 16);
         int[] decodedPositions = new int[5];
         int[] decodedMultiplier = new int[1];

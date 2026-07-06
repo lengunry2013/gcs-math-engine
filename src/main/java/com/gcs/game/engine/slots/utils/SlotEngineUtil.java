@@ -295,13 +295,17 @@ public class SlotEngineUtil {
         if (slotSpinResult != null) {
             if (slotSpinResult instanceof Model20260625SpinResult) {
                 String recoverData = slotSpinResult.getRecoverData();
-                String firstPart = recoverData.substring(0, 16);
-                String secondPart = recoverData.substring(16, 32);
-                long secondLong = Long.parseUnsignedLong(secondPart, 16);
-                // 直接使用 compressToLong 追加 wagerType（8位）
-                long finalSecondPartLong = CompressUtil.compressToLong(secondLong, wagerType);
-                String finalSecondPart = String.format("%016x", finalSecondPartLong);
-                slotSpinResult.setRecoverData(firstPart + finalSecondPart);
+                String[] recoverDataStr = recoverData.split("a");
+                if (recoverDataStr.length > 1) {
+                    String firstPart = recoverDataStr[0];
+                    long secondLong = Long.parseLong(recoverDataStr[1]);
+                    // 直接使用 compressToLong 追加 wagerType（8位）
+                    long finalSecondPartLong = CompressUtil.compressToLong(secondLong, wagerType);
+                    slotSpinResult.setRecoverData(firstPart + "a" + finalSecondPartLong);
+                } else {
+                    log.error("BaseGame spin recover data error!");
+                    throw new InvalidGameStateException();
+                }
             } else {
                 long result = CompressUtil.compressToLong(slotSpinResult.getSlotReelStopPosition(), slotSpinResult.getBaseGameMul());
                 long recoverData = CompressUtil.compressToLong(result, wagerType);
@@ -318,9 +322,12 @@ public class SlotEngineUtil {
         //recover data
         if (recoverInfo != null) {
             if (model instanceof Model20260625) {
-                String decodedSecondPart = recoverInfo.getRecoverData().substring(16, 32);
-                long decodedSecondLong = Long.parseUnsignedLong(decodedSecondPart, 16);
-                wagerType = CompressUtil.decompressWagerType(decodedSecondLong);
+                String[] recoverDataStr = recoverInfo.getRecoverData().split("a");
+                if (recoverDataStr.length > 1) {
+                    String decodedSecondPart = recoverDataStr[1];
+                    long decodedSecondLong = Long.parseLong(decodedSecondPart);
+                    wagerType = CompressUtil.decompressWagerType(decodedSecondLong);
+                }
             } else {
                 wagerType = CompressUtil.decompressWagerType(Long.parseLong(recoverInfo.getRecoverData()));
             }
@@ -341,8 +348,8 @@ public class SlotEngineUtil {
                 int[] position = new int[reelCount];
                 int[] reelsType = new int[1];
                 String recoverData = recoverInfo.getRecoverData();
-                String firstPart = recoverData.substring(0, 16);
-                long firstCompressed = Long.parseUnsignedLong(firstPart, 16);
+                String firstPart = recoverData.split("a")[0];
+                long firstCompressed = Long.parseLong(firstPart);
                 CompressUtil.decompressFrom2Long(firstCompressed, position, reelsType);
                 List<int[]> inputPositions = new ArrayList<>();
                 inputPositions.add(position);

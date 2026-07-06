@@ -10,6 +10,7 @@ import com.gcs.game.utils.RandomWeightUntil;
 import com.gcs.game.utils.StringUtil;
 import com.gcs.game.vo.InputInfo;
 import com.gcs.game.vo.RecoverInfo;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,6 +19,7 @@ import java.util.Map;
 /**
  * BigDaddy Game Bones&Rose
  */
+@Slf4j
 public class Model20260625 extends BaseSlotModel implements IWildReelsChange {
 
     private static final int WILD_SYMBOL = 1;
@@ -289,9 +291,8 @@ public class Model20260625 extends BaseSlotModel implements IWildReelsChange {
             if (recoverInfo != null) {
                 int[] position = new int[reelsCount()];
                 int[] reelsType = new int[1];
-                String recoverData = recoverInfo.getRecoverData();
-                String firstPart = recoverData.substring(0, 16);
-                long firstCompressed = Long.parseUnsignedLong(firstPart, 16);
+                String[] recoverData = recoverInfo.getRecoverData().split("a");
+                long firstCompressed = Long.parseLong(recoverData[0]);
                 CompressUtil.decompressFrom2Long(firstCompressed, position, reelsType);
                 randomIndex = reelsType[0];
                 if (randomIndex == 1) {
@@ -328,20 +329,26 @@ public class Model20260625 extends BaseSlotModel implements IWildReelsChange {
             boolean isSlot = true;
             int[] displaySymbols = getDisplaySymbols(reels, stopPosition);
             if (recoverInfo != null) {
-                String decodedSecondPart = recoverInfo.getRecoverData().substring(16, 32);
-                long decodedSecondLong = Long.parseUnsignedLong(decodedSecondPart, 16);
-                int[] scSymbols = new int[5];
-                int[] scTriggerIndex = new int[1];
-                CompressUtil.decompressFromLong(decodedSecondLong, scSymbols, scTriggerIndex);
-                for (int i = 0; i < reelsCount(); i++) {
-                    for (int j = 0; j < rowsCount(); j++) {
-                        if (displaySymbols[i + j * reelsCount()] == SC1_SYMBOL && scSymbols[i] > 0) {
-                            displaySymbols[i + j * reelsCount()] = scSymbols[i];
-                            break;
+                String[] decodedSecondPart = recoverInfo.getRecoverData().split("a");
+                if (decodedSecondPart.length > 1) {
+                    long decodedSecondLong = Long.parseLong(decodedSecondPart[1]);
+                    int[] scSymbols = new int[5];
+                    int[] scTriggerIndex = new int[1];
+                    CompressUtil.decompressFromLong(decodedSecondLong, scSymbols, scTriggerIndex);
+                    for (int i = 0; i < reelsCount(); i++) {
+                        for (int j = 0; j < rowsCount(); j++) {
+                            if (displaySymbols[i + j * reelsCount()] == SC1_SYMBOL && scSymbols[i] > 0) {
+                                displaySymbols[i + j * reelsCount()] = scSymbols[i];
+                                break;
+                            }
                         }
                     }
+                    baseSpinResult = (Model20260625SpinResult) computeSpin(displaySymbols, stopPosition, gameLogicBean, isSlot, recoverInfo, inputFeedBean);
+                } else {
+                    //recover error random result
+                    displaySymbols = getScChangeDisplaySymbols(displaySymbols, isSlot, gameLogicBean);
+                    baseSpinResult = (Model20260625SpinResult) computeSpin(displaySymbols, stopPosition, gameLogicBean, isSlot);
                 }
-                baseSpinResult = (Model20260625SpinResult) computeSpin(displaySymbols, stopPosition, gameLogicBean, isSlot, recoverInfo, inputFeedBean);
             } else if (inputFeedBean != null) {
                 displaySymbols = getScChangeDisplaySymbols(displaySymbols, isSlot, gameLogicBean);
                 baseSpinResult = (Model20260625SpinResult) computeSpin(displaySymbols, stopPosition, gameLogicBean, isSlot, recoverInfo, inputFeedBean);
@@ -443,7 +450,6 @@ public class Model20260625 extends BaseSlotModel implements IWildReelsChange {
         if (isSlot) {
             //save first long recover data
             long firstPart = CompressUtil.compressToLong(stopPosition, gameLogicBean.getBaseReelsType());
-            String firstRecoverData = String.format("%016x", firstPart);
             int fsType = -1;
             int sc1Count = computeScPosition(displaySymbols, SC1_SYMBOL);
             int sc2Count = computeScPosition(displaySymbols, SC2_SYMBOL);
@@ -490,8 +496,7 @@ public class Model20260625 extends BaseSlotModel implements IWildReelsChange {
             //second part recover data
             int scType = randomIndex + 1;
             long secondPart = CompressUtil.compressToLong(scSymbol, scType);
-            String secondRecoverData = String.format("%016x", secondPart);
-            result.setRecoverData(firstRecoverData + secondRecoverData);
+            result.setRecoverData(firstPart + "a" + secondPart);
         } else {
             //Fs random SC feature
             Model20260625SpinResult baseSpinResult = (Model20260625SpinResult) gameLogicBean.getSlotSpinResult();
@@ -626,16 +631,26 @@ public class Model20260625 extends BaseSlotModel implements IWildReelsChange {
             result.setFsType(fsType);
             //second part recover data
             if (recoverInfo != null) {
-                result.setRecoverData(recoverInfo.getRecoverData());
+                String[] recoverDataStr = recoverInfo.getRecoverData().split("a");
+                if (recoverDataStr.length > 1) {
+                    String firstPart = recoverDataStr[0];
+                    String decodedSecondPart = recoverDataStr[1];
+                    long decodedSecondLong = Long.parseLong(decodedSecondPart);
+                    int[] scSymbols = new int[5];
+                    int[] scTriggerIndex = new int[1];
+                    CompressUtil.decompressFromLong(decodedSecondLong, scSymbols, scTriggerIndex);
+                    long secondPart = CompressUtil.compressToLong(scSymbol, scTriggerIndex[0]);
+                    result.setRecoverData(firstPart + "a" + secondPart);
+                } else {
+                    log.error("Base Spin Recover Data error!");
+                    throw new RuntimeException();
+                }
             } else {
                 //save first long recover data
                 long firstPart = CompressUtil.compressToLong(stopPosition, gameLogicBean.getBaseReelsType());
-                String firstRecoverData = String.format("%016x", firstPart);
-                //save second recover data
                 int scType = randomIndex + 1;
                 long secondPart = CompressUtil.compressToLong(scSymbol, scType);
-                String secondRecoverData = String.format("%016x", secondPart);
-                result.setRecoverData(firstRecoverData + secondRecoverData);
+                result.setRecoverData(firstPart + "a" + secondPart);
             }
         } else {
             //Fs random SC feature
@@ -688,12 +703,22 @@ public class Model20260625 extends BaseSlotModel implements IWildReelsChange {
     }
 
     private int decodeBaseScRecover(RecoverInfo recoverInfo) {
-        String decodedSecondPart = recoverInfo.getRecoverData().substring(16, 32);
-        long decodedSecondLong = Long.parseUnsignedLong(decodedSecondPart, 16);
-        int[] scSymbols = new int[5];
-        int[] scTriggerIndex = new int[1];
-        CompressUtil.decompressFromLong(decodedSecondLong, scSymbols, scTriggerIndex);
-        return scTriggerIndex[0];
+        try {
+            String[] recoverDataStr = recoverInfo.getRecoverData().split("a");
+            if (recoverDataStr.length > 1) {
+                String decodedSecondPart = recoverDataStr[1];
+                long decodedSecondLong = Long.parseLong(decodedSecondPart);
+                int[] scSymbols = new int[5];
+                int[] scTriggerIndex = new int[1];
+                CompressUtil.decompressFromLong(decodedSecondLong, scSymbols, scTriggerIndex);
+                return scTriggerIndex[0];
+            } else {
+                throw new RuntimeException();
+            }
+        } catch (Exception e) {
+            log.error("decode recoverData error!");
+            return 0;
+        }
     }
 
     private int[] computeScSymbol(int[] displaySymbols) {
@@ -872,8 +897,7 @@ public class Model20260625 extends BaseSlotModel implements IWildReelsChange {
                 }
                 for (int i = 0; i < displaySymbols.length; i++) {
                     if (displaySymbols[i] == SC1_SYMBOL) {
-                        //int scIndex = scRandom.getRandomResult();
-                        int scIndex = 1;
+                        int scIndex = scRandom.getRandomResult();
                         if (scIndex == 1) {
                             newDisplaySymbols[i] = SC2_SYMBOL;
                         }
