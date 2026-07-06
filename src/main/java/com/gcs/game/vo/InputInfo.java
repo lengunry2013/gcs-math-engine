@@ -21,4 +21,6 @@ public class InputInfo {
 
     private String bonusWinPattern = "";
 
+    private Integer scTriggerIndex;
+
 }

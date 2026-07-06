@@ -841,12 +841,8 @@ public class SlotEngineUtil {
     private static InputInfo slotFsRecover(SlotGameLogicBean gameLogicCache, BaseSlotModel model, InputInfo input, RecoverInfo recoverInfo, int reelCount) {
         if (recoverInfo != null) {
             if (model instanceof Model20260625) {
-                int fsType = ((Model20260625SpinResult) gameLogicCache.getSlotSpinResult()).getFsType();
                 int[] fsPosition = new int[reelCount];
-                int[] scIndex = new int[15];
-                if (fsType == Model20260625.FS_EXTEND_REELS || fsType == Model20260625.FS_SUPER_BONUS) {
-                    scIndex = new int[30];
-                }
+                int[] scIndex = new int[30];
                 CompressUtil.decompressFromString(recoverInfo.getRecoverData(), fsPosition, scIndex);
                 List<int[]> inputPositions = new ArrayList<>();
                 inputPositions.add(fsPosition);

@@ -115,15 +115,17 @@ public class CompressUtil {
     }
 
     /**
-     * 动态压缩：根据scIndex长度决定使用2个还是3个long
-     *
+     * 固定使用3个long压缩数据
      * @param fsPosition 5个值，每个0-255
-     * @param scIndex    15或30个值，每个0-15
-     * @return long数组（2个或3个）
+     * @param scIndex 15或30个值，每个0-15
+     * @return 压缩后的3个long数组
      */
-    public static long[] compressToLongs(int[] fsPosition, int[] scIndex) {
+    public static long[] compressTo3Longs(int[] fsPosition, int[] scIndex) {
         if (fsPosition.length != 5) {
             throw new IllegalArgumentException("fsPosition长度必须为5");
+        }
+        if (scIndex.length != 15 && scIndex.length != 30) {
+            throw new IllegalArgumentException("scIndex长度必须为15或30");
         }
 
         // 验证范围
@@ -138,11 +140,7 @@ public class CompressUtil {
             }
         }
 
-        // 判断需要几个long
-        int totalBits = 40 + (scIndex.length * 4);
-        int longCount = (totalBits + 63) / 64; // 向上取整
-
-        long[] result = new long[longCount];
+        long[] result = new long[3];
         int currentLong = 0;
         int bitOffset = 0;
 
@@ -156,8 +154,10 @@ public class CompressUtil {
             }
         }
 
-        // 2. 压缩 scIndex (每个值4位)
-        for (int value : scIndex) {
+        // 2. 压缩 scIndex (每个值4位，最多30个)
+        int maxIndex = Math.min(scIndex.length, 30);
+        for (int i = 0; i < maxIndex; i++) {
+            int value = scIndex[i];
             result[currentLong] = (result[currentLong] << 4) | (value & 0x0F);
             bitOffset += 4;
             if (bitOffset == 64) {
@@ -166,8 +166,19 @@ public class CompressUtil {
             }
         }
 
-        // 如果最后一个long不满64位，左移补0（可选）
-        if (bitOffset > 0 && bitOffset < 64) {
+        // 3. 如果scIndex不足30个，用0填充剩余位置
+        int remaining = 30 - maxIndex;
+        for (int i = 0; i < remaining; i++) {
+            result[currentLong] = (result[currentLong] << 4) | 0;
+            bitOffset += 4;
+            if (bitOffset == 64) {
+                currentLong++;
+                bitOffset = 0;
+            }
+        }
+
+        // 如果最后一个long有剩余位，左移补0
+        if (bitOffset > 0 && currentLong < 3) {
             result[currentLong] = result[currentLong] << (64 - bitOffset);
         }
 
@@ -175,12 +186,16 @@ public class CompressUtil {
     }
 
     /**
-     * 解压数据（自动识别长度）
+     * 从3个long解压数据
      */
-    public static void decompressFromLongs(long[] compressed,
-                                           int[] fsPosition,
-                                           int[] scIndex) {
-        // 先提取所有位
+    public static void decompressFrom3Longs(long[] compressed,
+                                            int[] fsPosition,
+                                            int[] scIndex) {
+        if (compressed.length != 3) {
+            throw new IllegalArgumentException("需要3个long");
+        }
+
+        // 提取所有位
         StringBuilder allBits = new StringBuilder();
         for (long value : compressed) {
             String binary = String.format("%64s", Long.toBinaryString(value))
@@ -189,7 +204,6 @@ public class CompressUtil {
         }
 
         String bits = allBits.toString();
-        int totalBits = compressed.length * 64;
 
         // 1. 提取 fsPosition (前40位，5个值，每个8位)
         for (int i = 0; i < 5; i++) {
@@ -199,77 +213,51 @@ public class CompressUtil {
         }
 
         // 2. 提取 scIndex (从第40位开始，每个4位)
-        // 根据剩余位数计算scIndex长度
-        int remainingBits = totalBits - 40;
-        int scIndexCount = remainingBits / 4;
-
-        // 如果scIndexCount大于scIndex数组长度，取数组长度
-        int actualCount = Math.min(scIndexCount, scIndex.length);
-
-        for (int i = 0; i < actualCount; i++) {
+        int maxCount = Math.min(scIndex.length, 30);
+        for (int i = 0; i < maxCount; i++) {
             int start = 40 + i * 4;
-            if (start + 4 <= totalBits) {
+            if (start + 4 <= bits.length()) {
                 String nibbleStr = bits.substring(start, start + 4);
                 scIndex[i] = Integer.parseInt(nibbleStr, 2);
             }
         }
 
         // 如果scIndex数组比实际数据大，剩余部分填0
-        for (int i = actualCount; i < scIndex.length; i++) {
+        for (int i = maxCount; i < scIndex.length; i++) {
             scIndex[i] = 0;
         }
     }
 
     /**
-     * 压缩为字符串（统一格式）
+     * 压缩为固定长度的字符串 (3个long = 48位十六进制)
      */
     public static String compressToString(int[] fsPosition, int[] scIndex) {
-        long[] compressed = compressToLongs(fsPosition, scIndex);
+        long[] compressed = compressTo3Longs(fsPosition, scIndex);
         StringBuilder result = new StringBuilder();
-
-        // 先存储长度信息（使用2位十六进制表示long数量）
-        result.append(String.format("%02x", compressed.length));
-
-        // 再存储数据
         for (long value : compressed) {
             result.append(String.format("%016x", value));
         }
-
         return result.toString();
     }
 
     /**
-     * 从字符串解压
+     * 从固定长度字符串解压
      */
     public static void decompressFromString(String recoverData,
                                             int[] fsPosition,
                                             int[] scIndex) {
-        if (recoverData.length() < 2) {
-            throw new IllegalArgumentException("RecoverData长度不足");
+        if (recoverData.length() != 48) { // 3个long × 16位十六进制 = 48
+            throw new IllegalArgumentException("RecoverData长度必须为48，当前长度: " + recoverData.length());
         }
 
-        // 读取长度信息
-        int longCount = Integer.parseInt(recoverData.substring(0, 2), 16);
-        if (longCount < 2 || longCount > 3) {
-            throw new IllegalArgumentException("无效的long数量: " + longCount);
-        }
-
-        // 验证字符串长度
-        int expectedLength = 2 + longCount * 16;
-        if (recoverData.length() != expectedLength) {
-            throw new IllegalArgumentException("RecoverData长度不正确: " + recoverData.length() +
-                    ", 期望: " + expectedLength);
-        }
-
-        // 提取数据
-        long[] compressed = new long[longCount];
-        for (int i = 0; i < longCount; i++) {
-            int start = 2 + i * 16;
+        long[] compressed = new long[3];
+        for (int i = 0; i < 3; i++) {
+            int start = i * 16;
             String part = recoverData.substring(start, start + 16);
             compressed[i] = Long.parseUnsignedLong(part, 16);
         }
 
-        decompressFromLongs(compressed, fsPosition, scIndex);
+        decompressFrom3Longs(compressed, fsPosition, scIndex);
     }
 
     public static void main(String[] args) {
@@ -330,7 +318,7 @@ public class CompressUtil {
         }
 
         // 压缩
-        long[] compressed30 = CompressUtil.compressToLongs(fsPosition, scIndex30);
+        long[] compressed30 = CompressUtil.compressTo3Longs(fsPosition, scIndex30);
         System.out.println("需要 " + compressed30.length + " 个long");
         for (int i = 0; i < compressed30.length; i++) {
             System.out.printf("long[%d]: 0x%016x%n", i, compressed30[i]);
@@ -349,31 +337,5 @@ public class CompressUtil {
         System.out.println("解压后scIndex长度: " + decodedScIndex30.length);
         System.out.println("数据一致性: " + Arrays.equals(scIndex30, decodedScIndex30));
 
-        // ============ 测试场景2：scIndex长度为15 ============
-        System.out.println("\n========== 场景2：scIndex长度15 ==========");
-        int[] scIndex15 = new int[15];
-        for (int i = 0; i < 15; i++) {
-            scIndex15[i] = i % 16;
-        }
-
-        // 压缩
-        long[] compressed15 = CompressUtil.compressToLongs(fsPosition, scIndex15);
-        System.out.println("需要 " + compressed15.length + " 个long");
-        for (int i = 0; i < compressed15.length; i++) {
-            System.out.printf("long[%d]: 0x%016x%n", i, compressed15[i]);
-        }
-
-        // 转为字符串
-        String recoverData15 = CompressUtil.compressToString(fsPosition, scIndex15);
-        System.out.println("RecoverData: " + recoverData15);
-        System.out.println("长度: " + recoverData15.length());
-
-        // 解压
-        int[] decodedFsPos15 = new int[5];
-        int[] decodedScIndex15 = new int[15];
-        CompressUtil.decompressFromString(recoverData15, decodedFsPos15, decodedScIndex15);
-        System.out.println("解压后decodedFsPos: " + Arrays.toString(decodedFsPos15));
-        System.out.println("解压后scIndex长度: " + decodedScIndex15.length);
-        System.out.println("数据一致性: " + Arrays.equals(scIndex15, decodedScIndex15));
     }
 }

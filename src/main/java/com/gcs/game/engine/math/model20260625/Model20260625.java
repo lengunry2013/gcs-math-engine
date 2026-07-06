@@ -502,7 +502,8 @@ public class Model20260625 extends BaseSlotModel implements IWildReelsChange {
             }
             List<Integer> scPositions = computeFsScPosition(displaySymbols, scSymbol);
             int[] hitScatterPay = new int[displaySymbols.length];
-            int[] scIndex = new int[displaySymbols.length];
+            int scLen = rowCountInFreeSpin() * reelsCountInFreeSpin();
+            int[] scIndex = new int[scLen];
             if (!scPositions.isEmpty()) {
                 RandomWeightUntil randomWeightUntil = new RandomWeightUntil(SC_AWARD_WEIGHT[fsType - 1]);
                 for (int position : scPositions) {
@@ -523,11 +524,33 @@ public class Model20260625 extends BaseSlotModel implements IWildReelsChange {
         result = (Model20260625SpinResult) transferHitList(result, hitList, displaySymbols, stopPosition);
         if (isSlot) {
             result.setBaseGameMul(baseGameMultiplier);
+            setBaseLine(result);
         }
         if (!isSlot) {
             result.setFsMul(freeSpinMultiplier);
         }
         return result;
+    }
+
+    /**
+     * use front show
+     *
+     * @param result
+     */
+    private void setBaseLine(Model20260625SpinResult result) {
+        if (result != null) {
+            int[] hitLines = result.getHitSlotLines();
+            int maxLines = (int) maxLines();
+            if (hitLines != null) {
+                int[] newHitLines = new int[hitLines.length];
+                for (int i = 0; i < hitLines.length; i++) {
+                    if (hitLines[i] > maxLines && hitLines[i] < SlotEngineConstant.SCATTER_HIT_LINE) {
+                        newHitLines[i] = hitLines[i] - 25;
+                    }
+                }
+                result.setHitSlotLines(newHitLines);
+            }
+        }
     }
 
     protected SlotSpinResult computeSpinResult(int[] stopPosition, int[] displaySymbols, Map<Integer, int[]> payLinesMap, SlotGameLogicBean gameLogicBean, boolean isSlot, RecoverInfo recoverInfo, InputInfo inputInfo) {
@@ -624,7 +647,8 @@ public class Model20260625 extends BaseSlotModel implements IWildReelsChange {
             }
             List<Integer> scPositions = computeFsScPosition(displaySymbols, scSymbol);
             int[] hitScatterPay = new int[displaySymbols.length];
-            int[] scIndex = new int[displaySymbols.length];
+            int scLen = rowCountInFreeSpin() * reelsCountInFreeSpin();
+            int[] scIndex = new int[scLen];
             if (!scPositions.isEmpty()) {
                 if (recoverInfo != null) {
                     CompressUtil.decompressFromString(recoverInfo.getRecoverData(), stopPosition, scIndex);
@@ -655,6 +679,7 @@ public class Model20260625 extends BaseSlotModel implements IWildReelsChange {
         result = (Model20260625SpinResult) transferHitList(result, hitList, displaySymbols, stopPosition);
         if (isSlot) {
             result.setBaseGameMul(baseGameMultiplier);
+            setBaseLine(result);
         }
         if (!isSlot) {
             result.setFsMul(freeSpinMultiplier);
@@ -847,7 +872,8 @@ public class Model20260625 extends BaseSlotModel implements IWildReelsChange {
                 }
                 for (int i = 0; i < displaySymbols.length; i++) {
                     if (displaySymbols[i] == SC1_SYMBOL) {
-                        int scIndex = scRandom.getRandomResult();
+                        //int scIndex = scRandom.getRandomResult();
+                        int scIndex = 1;
                         if (scIndex == 1) {
                             newDisplaySymbols[i] = SC2_SYMBOL;
                         }
