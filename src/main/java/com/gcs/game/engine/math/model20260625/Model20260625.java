@@ -53,12 +53,12 @@ public class Model20260625 extends BaseSlotModel implements IWildReelsChange {
 
     @Override
     public long minBetPerLine() {
-        return 1;
+        return 2;
     }
 
     @Override
     public long maxBetPerLine() {
-        return 10;
+        return 20;
     }
 
     @Override
@@ -73,7 +73,7 @@ public class Model20260625 extends BaseSlotModel implements IWildReelsChange {
 
     @Override
     public long totalBet(long lines, long betPerLine) {
-        return 50 * betPerLine;
+        return lines * betPerLine;
     }
 
     protected int reelsCountInFreeSpin() {
@@ -759,6 +759,23 @@ public class Model20260625 extends BaseSlotModel implements IWildReelsChange {
             }
         }
         return hitList;
+    }
+
+    protected SlotSymbolHitResult setHitResult(SlotGameLogicBean gameLogicBean, SlotSymbol symbol, int symbolNumber, long line, long betPerLine, int[] hitPosition, int hitCount, boolean inSlot) {
+        SlotSymbolHitResult hitResult = new SlotSymbolHitResult();
+        hitResult.setHitSymbol(symbolNumber);
+        hitResult.setHitSymbolSound(symbolNumber);
+        hitResult.setHitLine((int) line);
+        hitResult.setHitMul(1);
+        hitResult.setHitPosition(hitPosition);
+        hitResult.setHitCount(hitCount);
+        if (inSlot) {
+            hitResult.setHitPay(symbol.getPay()[hitCount - 1] * betPerLine / 2);
+        } else {
+            hitResult.setHitPay(symbol.getPayInFreeSpin()[hitCount - 1] * betPerLine / 2);
+        }
+        computeUnNormalSymbol(gameLogicBean, symbol, hitCount, hitResult, inSlot);
+        return hitResult;
     }
 
 
