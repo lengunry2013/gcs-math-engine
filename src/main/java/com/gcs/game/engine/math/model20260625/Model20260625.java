@@ -292,7 +292,7 @@ public class Model20260625 extends BaseSlotModel implements IWildReelsChange {
                 int[] position = new int[reelsCount()];
                 int[] reelsType = new int[1];
                 String[] recoverData = recoverInfo.getRecoverData().split("a");
-                long firstCompressed = Long.parseLong(recoverData[0]);
+                long firstCompressed = Long.parseUnsignedLong(recoverData[0]);
                 CompressUtil.decompressFrom2Long(firstCompressed, position, reelsType);
                 randomIndex = reelsType[0];
                 if (randomIndex == 1) {
@@ -331,7 +331,7 @@ public class Model20260625 extends BaseSlotModel implements IWildReelsChange {
             if (recoverInfo != null) {
                 String[] decodedSecondPart = recoverInfo.getRecoverData().split("a");
                 if (decodedSecondPart.length > 1) {
-                    long decodedSecondLong = Long.parseLong(decodedSecondPart[1]);
+                    long decodedSecondLong = Long.parseUnsignedLong(decodedSecondPart[1]);
                     int[] scSymbols = new int[5];
                     int[] scTriggerIndex = new int[1];
                     CompressUtil.decompressFromLong(decodedSecondLong, scSymbols, scTriggerIndex);
@@ -496,7 +496,7 @@ public class Model20260625 extends BaseSlotModel implements IWildReelsChange {
             //second part recover data
             int scType = randomIndex + 1;
             long secondPart = CompressUtil.compressToLong(scSymbol, scType);
-            result.setRecoverData(firstPart + "a" + secondPart);
+            result.setRecoverData(Long.toUnsignedString(firstPart) + "a" + Long.toUnsignedString(secondPart));
         } else {
             //Fs random SC feature
             Model20260625SpinResult baseSpinResult = (Model20260625SpinResult) gameLogicBean.getSlotSpinResult();
@@ -635,12 +635,12 @@ public class Model20260625 extends BaseSlotModel implements IWildReelsChange {
                 if (recoverDataStr.length > 1) {
                     String firstPart = recoverDataStr[0];
                     String decodedSecondPart = recoverDataStr[1];
-                    long decodedSecondLong = Long.parseLong(decodedSecondPart);
+                    long decodedSecondLong = Long.parseUnsignedLong(decodedSecondPart);
                     int[] scSymbols = new int[5];
                     int[] scTriggerIndex = new int[1];
                     CompressUtil.decompressFromLong(decodedSecondLong, scSymbols, scTriggerIndex);
                     long secondPart = CompressUtil.compressToLong(scSymbol, scTriggerIndex[0]);
-                    result.setRecoverData(firstPart + "a" + secondPart);
+                    result.setRecoverData(firstPart + "a" + Long.toUnsignedString(secondPart));
                 } else {
                     log.error("Base Spin Recover Data error!");
                     throw new RuntimeException();
@@ -650,7 +650,7 @@ public class Model20260625 extends BaseSlotModel implements IWildReelsChange {
                 long firstPart = CompressUtil.compressToLong(stopPosition, gameLogicBean.getBaseReelsType());
                 int scType = randomIndex + 1;
                 long secondPart = CompressUtil.compressToLong(scSymbol, scType);
-                result.setRecoverData(firstPart + "a" + secondPart);
+                result.setRecoverData(Long.toUnsignedString(firstPart) + "a" + Long.toUnsignedString(secondPart));
             }
         } else {
             //Fs random SC feature
@@ -707,7 +707,7 @@ public class Model20260625 extends BaseSlotModel implements IWildReelsChange {
             String[] recoverDataStr = recoverInfo.getRecoverData().split("a");
             if (recoverDataStr.length > 1) {
                 String decodedSecondPart = recoverDataStr[1];
-                long decodedSecondLong = Long.parseLong(decodedSecondPart);
+                long decodedSecondLong = Long.parseUnsignedLong(decodedSecondPart);
                 int[] scSymbols = new int[5];
                 int[] scTriggerIndex = new int[1];
                 CompressUtil.decompressFromLong(decodedSecondLong, scSymbols, scTriggerIndex);

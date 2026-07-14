@@ -238,9 +238,9 @@ public class CompressUtil {
         int index = 0;
         for (long value : compressed) {
             if (index == 2) {
-                result.append(value);
+                result.append(Long.toUnsignedString(value));
             } else {
-                result.append(value).append("a");
+                result.append(Long.toUnsignedString(value)).append("a");
             }
             index++;
         }
@@ -259,7 +259,7 @@ public class CompressUtil {
         }
         long[] compressed = new long[3];
         for (int i = 0; i < 3; i++) {
-            compressed[i] = Long.parseLong(recoverDataStr[i]);
+            compressed[i] = Long.parseUnsignedLong(recoverDataStr[i]);
         }
         decompressFrom3Longs(compressed, fsPosition, scIndex);
     }
@@ -312,14 +312,12 @@ public class CompressUtil {
         System.out.println("slotPos: " + Arrays.toString(decodedSlotPos));
         System.out.println("wildPos: " + decodedWildPos);*/
 
-        int[] fsPosition = {25, 90, 81, 20, 12};
+        int[] fsPosition = {24, 13, 30, 48, 3};
 
         // ============ 测试场景1：scIndex长度为30 ============
         System.out.println("========== 场景1：scIndex长度30 ==========");
         int[] scIndex30 = new int[30];
-        for (int i = 0; i < 30; i++) {
-            scIndex30[i] = i % 16;
-        }
+        scIndex30[6] = 10;
 
         // 压缩
         long[] compressed30 = CompressUtil.compressTo3Longs(fsPosition, scIndex30);
@@ -340,6 +338,8 @@ public class CompressUtil {
         System.out.println("解压后fs Position: " + Arrays.toString(decodedFsPos5));
         System.out.println("解压后scIndex长度: " + decodedScIndex30.length);
         System.out.println("数据一致性: " + Arrays.equals(scIndex30, decodedScIndex30));
+        System.out.println("解压后scIndex: " + Arrays.toString(decodedScIndex30));
+
 
     }
 }
