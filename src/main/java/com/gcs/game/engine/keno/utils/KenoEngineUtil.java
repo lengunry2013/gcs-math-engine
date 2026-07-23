@@ -1,6 +1,7 @@
 package com.gcs.game.engine.keno.utils;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.TypeReference;
 import com.gcs.game.engine.GameModelFactory;
 import com.gcs.game.engine.keno.model.BaseKenoModel;
 import com.gcs.game.engine.keno.vo.KenoGameLogicBean;
@@ -278,6 +279,7 @@ public class KenoEngineUtil {
 
     private static void setGameLogicRequest(Map gameLogicMap, KenoGameLogicBean gameLogicCache) throws InvalidGameStateException, InvalidBetException {
         if (gameLogicMap != null && !gameLogicMap.isEmpty()) {
+            KenoResult kenoResult = new KenoResult();
             gameLogicCache.setBet(Long.parseLong(gameLogicMap.get("bet").toString()));
             gameLogicCache.setLines(Long.parseLong(gameLogicMap.get("lines").toString()));
             gameLogicCache.setDenom(Long.parseLong(gameLogicMap.get("denom").toString()));
@@ -286,7 +288,14 @@ public class KenoEngineUtil {
             if (selectNumbers == null) {
                 throw new InvalidGameStateException();
             }
-            KenoResult kenoResult = new KenoResult();
+            if (gameLogicMap.containsKey("additionsSetsNumbers")) {
+                List<List<Integer>> additionsSetsNumbers = JSON.parseObject(
+                        gameLogicMap.get("additionsSetsNumbers").toString(),
+                        new TypeReference<List<List<Integer>>>() {
+                        }
+                );
+                kenoResult.setAdditionsSetsNumbers(additionsSetsNumbers);
+            }
             kenoResult.setSelectNumbers(selectNumbers);
             gameLogicCache.setKenoResult(kenoResult);
         } else {

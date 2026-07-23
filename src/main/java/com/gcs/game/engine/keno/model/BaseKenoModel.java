@@ -169,7 +169,7 @@ public abstract class BaseKenoModel {
         return null;
     }
 
-    private int computeMatchCount(List<Integer> randomNumbers, List<Integer> setNumbers) {
+    protected int computeMatchCount(List<Integer> randomNumbers, List<Integer> setNumbers) {
         AtomicInteger matchCount = new AtomicInteger();
         setNumbers.forEach(number -> {
             if (randomNumbers.contains(number)) {
@@ -183,7 +183,7 @@ public abstract class BaseKenoModel {
         return 1;
     }
 
-    private List<Integer> getLeftNumbers(int[] allNumbers, List<Integer> numberList) {
+    protected List<Integer> getLeftNumbers(int[] allNumbers, List<Integer> numberList) {
         List<Integer> leftNumbers = new ArrayList<>();
         for (int number : allNumbers) {
             if (!numberList.contains(number)) {

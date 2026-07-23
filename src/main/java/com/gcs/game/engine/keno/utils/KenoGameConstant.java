@@ -6,5 +6,4 @@ public class KenoGameConstant {
     public static final int FS_SET_MAX_SPOTS = 3;
     public static final int FS_SET_MUL_SPOTS = 2;
 
-
 }

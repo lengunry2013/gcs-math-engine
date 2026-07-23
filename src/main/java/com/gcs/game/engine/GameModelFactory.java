@@ -20,6 +20,7 @@ import com.gcs.game.engine.math.model20260618.Model20260618;
 import com.gcs.game.engine.math.model20260625.Model20260625;
 import com.gcs.game.engine.math.model20260625.Model20260625Bonus;
 import com.gcs.game.engine.math.model20260701.Model20260701;
+import com.gcs.game.engine.math.model20260715.Model20260715;
 import com.gcs.game.engine.math.model5070530.Model5070530;
 import com.gcs.game.engine.math.model6060630.Model6060630;
 import com.gcs.game.engine.math.model6060630.Model6060630Bonus;
@@ -196,6 +197,9 @@ public class GameModelFactory {
         switch (mathModel) {
             case "5070530":
                 model = new Model5070530();
+                break;
+            case "20260715":
+                model = new Model20260715();
                 break;
             default:
                 break;
