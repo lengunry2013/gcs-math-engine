@@ -4,6 +4,9 @@ import com.gcs.game.engine.math.model6080630.Model6080630;
 import com.gcs.game.engine.poker.vo.PokerGameLogicBean;
 import com.gcs.game.utils.RandomWeightUntil;
 
+/**
+ * LuckyBelle Game
+ */
 public class Model6060630 extends Model6080630 {
     protected static final int[] GOLD_CARD_BONUS_WEIGHT = new int[]{
             20, 57, 23

@@ -12,6 +12,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * EsqueletoExplosive Game
+ */
 public class Model1010802 extends BaseSlotModel implements IRespin {
 
     private static final int WILD_SYMBOL = 1;

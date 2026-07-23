@@ -16,6 +16,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * model 20260103.
+ * Game MakinBacon
+ * math doc: 20260103_MAKIN_BACON_88%.xlsx
+ */
 public class Model20260103 extends BaseSlotModel implements IWildPositionsChange {
 
     private static final int WILD_SYMBOL = 1;

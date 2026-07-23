@@ -7,6 +7,9 @@ import com.gcs.game.utils.RandomWeightUntil;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * ShootingForRoyalPoker Game
+ */
 public class Model6080630 extends BasePokerModel {
     protected static final int[] GOLD_CARD_WEIGHT = new int[]{59, 1};
     protected static final int[] GOLD_CARD_BONUS_WEIGHT = new int[]{

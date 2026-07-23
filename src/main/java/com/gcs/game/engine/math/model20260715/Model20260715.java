@@ -15,6 +15,9 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Makin Bacon Keno
+ */
 @Slf4j
 public class Model20260715 extends BaseKenoModel {
     public static final int[][] FS_SETA_TIMES = new int[][]{

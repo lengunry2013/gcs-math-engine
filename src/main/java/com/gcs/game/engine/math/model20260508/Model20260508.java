@@ -13,7 +13,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-
+/**
+ * CheddarQuestLink game freespin
+ *
+ */
 public class Model20260508 extends BaseSlotModel {
 
     private static final int WILD_SYMBOL = 1;

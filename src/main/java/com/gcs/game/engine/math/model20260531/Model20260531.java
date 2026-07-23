@@ -13,7 +13,7 @@ import com.gcs.game.utils.StringUtil;
 import java.util.*;
 
 /**
- * Rabbit game
+ * Rabbit game Freespin
  */
 
 public class Model20260531 extends BaseSlotModel {

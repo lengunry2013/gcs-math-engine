@@ -13,6 +13,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * LittleDragonBuns Game
+ */
 public class Model1260130 extends BaseSlotModel {
 
     protected static final int WILD_SYMBOL = 1;

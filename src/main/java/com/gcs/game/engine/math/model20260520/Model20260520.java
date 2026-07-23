@@ -11,9 +11,9 @@ import com.gcs.game.vo.InputInfo;
 import java.util.*;
 
 /**
- * @author: alice
+ * @author: Jiangqx
  * @date: 2025/9/11 10:47
- * @description:
+ * @description: LiquidGold Game
  */
 
 public class Model20260520 extends BaseSlotModel {

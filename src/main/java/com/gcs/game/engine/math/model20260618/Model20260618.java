@@ -9,6 +9,9 @@ import com.gcs.game.utils.RandomWeightUntil;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * KingFish2 Game
+ */
 public class Model20260618 extends BaseSlotModel {
 
     protected static final int WILD_SYMBOL = 1;

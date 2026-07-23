@@ -4,6 +4,9 @@ import com.gcs.game.engine.keno.model.BaseKenoModel;
 import com.gcs.game.engine.keno.vo.KenoGameLogicBean;
 import com.gcs.game.utils.RandomUtil;
 
+/**
+ * DiscoKeno Game
+ */
 public class Model5070530 extends BaseKenoModel {
     public static final int[][] FS_TIMES = new int[][]{
             {5, 6, 8, 12},

@@ -11,6 +11,9 @@ import com.gcs.game.vo.RecoverInfo;
 
 import java.util.Map;
 
+/**
+ * PrivateAgent Game
+ */
 public class Model8140802 extends BaseSlotModel implements IWildPositionsChange {
 
     private static final int WILD_SYMBOL = 1;

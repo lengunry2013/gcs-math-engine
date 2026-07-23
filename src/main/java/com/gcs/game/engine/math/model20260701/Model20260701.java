@@ -17,6 +17,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * GoldRing Circus Game
+ */
 public class Model20260701 extends BaseSlotModel implements IWildReelsChange {
 
     public static final int WILD_SYMBOL = 1;
