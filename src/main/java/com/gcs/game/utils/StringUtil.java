@@ -45,7 +45,7 @@ public class StringUtil {
 
     public static int[] ListToIntegerArray(List<Integer> list) {
         int[] result = null;
-        if (list != null) {
+        if (list != null && !list.isEmpty()) {
             result = new int[list.size()];
             for (int i = 0; i < list.size(); i++) {
                 result[i] = list.get(i);
