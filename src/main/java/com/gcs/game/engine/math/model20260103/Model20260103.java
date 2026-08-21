@@ -757,7 +757,8 @@ public class Model20260103 extends BaseSlotModel implements IWildPositionsChange
                     }
                     int[] randomIndex = RandomUtil.getRandomIndex(noWildPosition.size());
                     for (int i = 0; i < scAddIndex; i++) {
-                        newDisplaySymbols[randomIndex[i]] = SC1_SYMBOL;
+                        int realPosition = noWildPosition.get(randomIndex[i]);
+                        newDisplaySymbols[realPosition] = SC1_SYMBOL;
                     }
                 }
             } else if (fsType == FS_JACKPOT_BONUS) {
@@ -774,7 +775,8 @@ public class Model20260103 extends BaseSlotModel implements IWildPositionsChange
                     }
                     int[] randomIndex = RandomUtil.getRandomIndex(noWildPosition.size());
                     for (int i = 0; i < scAddIndex; i++) {
-                        newDisplaySymbols[randomIndex[i]] = SC2_SYMBOL;
+                        int realPosition = noWildPosition.get(randomIndex[i]);
+                        newDisplaySymbols[realPosition] = SC2_SYMBOL;
                     }
                 }
             } else if (fsType == FS_SUPER_BONUS) {
@@ -791,7 +793,8 @@ public class Model20260103 extends BaseSlotModel implements IWildPositionsChange
                     }
                     int[] randomIndex = RandomUtil.getRandomIndex(noWildPosition.size());
                     for (int i = 0; i < scAddIndex; i++) {
-                        newDisplaySymbols[randomIndex[i]] = SC3_SYMBOL;
+                        int realPosition = noWildPosition.get(randomIndex[i]);
+                        newDisplaySymbols[realPosition] = SC3_SYMBOL;
                     }
                 }
             }
