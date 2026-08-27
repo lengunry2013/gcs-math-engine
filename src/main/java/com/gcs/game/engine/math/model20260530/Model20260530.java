@@ -70,9 +70,9 @@ public class Model20260530 extends BaseSlotModel {
     protected long[][] getPayTable() {
         return new long[][]{
                 {0, 0, 0, 0, 0},    // 1
-                {0, 0, 150, 300, 1000},  // 2
-                {0, 0, 100, 250, 500},  // 3
-                {0, 0, 60, 150, 300},  // 4
+                {0, 0, 150, 300, 2000},  // 2
+                {0, 0, 100, 250, 1000},  // 3
+                {0, 0, 50, 150, 300},  // 4
                 {0, 0, 30, 75, 150},  // 5
 
                 {0, 0, 20, 40, 80},  //6
@@ -162,6 +162,21 @@ public class Model20260530 extends BaseSlotModel {
     @Override
     public long totalBet(long lines, long betPerLine) {
         return 50 * betPerLine;
+    }
+
+    protected int[] getBaseScWeight(int payback) {
+        int[] scWeight = BASE_SC_WEIGHT;
+        switch (payback) {
+            case 8830:
+                scWeight = new int[]{790, 210};
+                break;
+            case 9065:
+                scWeight = new int[]{7776, 2224};
+                break;
+            default:
+                break;
+        }
+        return scWeight;
     }
 
     public SlotSpinResult spin(SlotGameFeatureVo modelFeatureBean, SlotGameLogicBean gameLogicBean) {
@@ -288,7 +303,7 @@ public class Model20260530 extends BaseSlotModel {
         if (isSlot) {
             //feature 1 SC feature
             //boolean isScFlag = false;
-            boolean isScFlag = computeScFeature(displaySymbols, result, spinResult, isLineWinFlag, isSlot, BASE_SC_WEIGHT);
+            boolean isScFlag = computeScFeature(displaySymbols, result, spinResult, isLineWinFlag, isSlot, getBaseScWeight(gameLogicBean.getPercentage()));
             //feature 2 WL feature
             boolean isWildFlag = false;
             if (!isScFlag) {
@@ -360,7 +375,7 @@ public class Model20260530 extends BaseSlotModel {
                                 }
                             }
                         }
-                        if (!expandPosition.isEmpty() && expandPosition.size() > wildAdd) {
+                        if (!expandPosition.isEmpty() && expandPosition.size() >= wildAdd) {
                             Collections.sort(expandPosition);
                             int[] random = RandomUtil.getRandomIndex(expandPosition.size(), wildAdd);
                             List<Integer> wildPosition = new ArrayList<>();
