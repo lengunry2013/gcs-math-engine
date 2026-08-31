@@ -17,6 +17,7 @@
         <reflections.version>0.10.2</reflections.version>
         <fastjson.version>1.2.70</fastjson.version>
         <jacob.version>1.21</jacob.version>
+        <hutool-5.version>5.8.35</hutool-5.version>
     </properties>
     <parent>
         <groupId>org.springframework.boot</groupId>
@@ -73,6 +74,11 @@
             <artifactId>annotations</artifactId>
             <version>26.0.1</version>
             <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-all</artifactId>
+            <version>${hutool-5.version}</version>
         </dependency>
     </dependencies>
 

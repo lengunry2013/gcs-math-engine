@@ -5,6 +5,7 @@ import com.gcs.game.engine.common.cache.GameMathCacheStorage;
 import com.gcs.game.engine.math.model20260625.Model20260625;
 import com.gcs.game.engine.math.model20260625.Model20260625SpinResult;
 import com.gcs.game.engine.slots.bonus.BaseBonus;
+import com.gcs.game.engine.slots.model.IFsLinkBonusComputer;
 import com.gcs.game.engine.slots.model.IFsSceneComputer;
 import com.gcs.game.engine.slots.model.BaseSlotModel;
 import com.gcs.game.engine.slots.utils.reels.ReelsBean;
@@ -823,19 +824,26 @@ public class SlotEngineUtil {
                 }
                 gameLogicCache.getSlotFsSpinResults().add(spinResult);
 
-                if (model != null && model instanceof IFsSceneComputer) {
+                if (model instanceof IFsSceneComputer) {
                     IFsSceneComputer freeSpinSceneComputer = (IFsSceneComputer) model;
                     freeSpinComplete = freeSpinSceneComputer.computeNextSceneWhileTriggerBonusInRespin(gameLogicCache, spinResult);
+                } else if (model instanceof IFsLinkBonusComputer) {
+                    IFsLinkBonusComputer freeSpinLinkBonusComputer = (IFsLinkBonusComputer) model;
+                    freeSpinComplete = freeSpinLinkBonusComputer.computeFsCountLeftWhileLinkBonus(gameLogicCache, spinResult);
                 } else {
                     freeSpinComplete = computeFreeSpinGame(gameLogicCache, spinResult);
                 }
 
-                long winCredit = spinResult.getSlotPay();
-                long denom = gameLogicCache.getDenom();
-                long winBalance = winCredit * denom;
-                gameLogicCache.setSumWinCredit(gameLogicCache.getSumWinCredit() + winCredit);
-                gameLogicCache.setSumWinBalance(gameLogicCache.getSumWinBalance() + winBalance);
-                gameLogicCache.setPayForCurrentStep(winCredit);
+                if (model instanceof IFsLinkBonusComputer) {
+                    ((IFsLinkBonusComputer) model).computeTotalPays(gameLogicCache, spinResult, freeSpinComplete);
+                } else {
+                    long winCredit = spinResult.getSlotPay();
+                    long denom = gameLogicCache.getDenom();
+                    long winBalance = winCredit * denom;
+                    gameLogicCache.setSumWinCredit(gameLogicCache.getSumWinCredit() + winCredit);
+                    gameLogicCache.setSumWinBalance(gameLogicCache.getSumWinBalance() + winBalance);
+                    gameLogicCache.setPayForCurrentStep(winCredit);
+                }
             }
         }
         if (freeSpinComplete && !isBaseGameRespin) {

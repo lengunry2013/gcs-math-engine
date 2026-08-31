@@ -54,7 +54,7 @@ public class BaseGameLogicBean {
             } else if ("8140802".equalsIgnoreCase(mmID) || "1260130".equalsIgnoreCase(mmID) ||
                     "1010802".equalsIgnoreCase(mmID) || "20260201".equalsIgnoreCase(mmID) ||
                     "20260103".equalsIgnoreCase(mmID) || "20260507".equalsIgnoreCase(mmID) ||
-                    "20260625".equalsIgnoreCase(mmID)) {
+                    "20260625".equalsIgnoreCase(mmID) || "20260825".equalsIgnoreCase(mmID)) {
                 bean = SlotGameLogicBean.deserialize(gameSessionBeanJson.toJSONString());
             } else if ("6080630".equalsIgnoreCase(mmID) || "6060630".equalsIgnoreCase(mmID)) {
                 bean = PokerGameLogicBean.deserialize(gameSessionBeanJson.toJSONString());

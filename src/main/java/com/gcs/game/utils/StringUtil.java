@@ -175,6 +175,35 @@ public class StringUtil {
         return result;
     }
 
+    /**
+     * deep copy long[][] -> List<long[]>
+     */
+    public static List<long[]> deepCopyLongArrayList(List<long[]> source) {
+        if (source == null) {
+            return new ArrayList<>();
+        }
+        List<long[]> copy = new ArrayList<>();
+        for (long[] array : source) {
+            copy.add(array.clone());
+        }
+        return copy;
+    }
+
+    /**
+     * deep copy int[][] -> List<int[]>
+     */
+    public static List<int[]> deepCopyIntArrayList(List<int[]> source) {
+        if (source == null) {
+            return new ArrayList<>();
+        }
+        List<int[]> copy = new ArrayList<>();
+        for (int[] array : source) {
+            copy.add(array.clone());
+        }
+        return copy;
+    }
+
+
     public static void main(String[] args) {
         /*List<MathTypes> list = new ArrayList<>();
         MathTypes mathTypes1 = new MathTypes();

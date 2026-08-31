@@ -10,6 +10,7 @@ import com.gcs.game.engine.math.model1260130.Model1260130SpinResult;
 import com.gcs.game.engine.math.model20260103.Model20260103SpinResult;
 import com.gcs.game.engine.math.model20260507.Model20260507SpinResult;
 import com.gcs.game.engine.math.model20260625.Model20260625SpinResult;
+import com.gcs.game.engine.math.model20260825.Model20260825SpinResult;
 
 
 import java.io.IOException;
@@ -32,6 +33,8 @@ public class SlotSpinResultDeserializer extends JsonDeserializer<SlotSpinResult>
             result = objectMapper.treeToValue(jNode, Model20260507SpinResult.class);
         } else if (jNode.findValue("fsType") != null) {
             result = objectMapper.treeToValue(jNode, Model20260625SpinResult.class);
+        } else if (jNode.findValue("swType") != null) {
+            result = objectMapper.treeToValue(jNode, Model20260825SpinResult.class);
         } else {
             result = objectMapper.treeToValue(jNode, SlotSpinResult.class);
         }

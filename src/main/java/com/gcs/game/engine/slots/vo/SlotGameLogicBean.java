@@ -3,7 +3,6 @@ package com.gcs.game.engine.slots.vo;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.gcs.game.vo.BaseGameLogicBean;
 import lombok.Getter;
@@ -36,6 +35,8 @@ public class SlotGameLogicBean extends BaseGameLogicBean {
     private String lastScenes = null;
 
     private int fsCountLeft = 0;
+
+    private List<Integer> fsCountLeftList = null;
 
     private int[] fsHitCounts = null;
 
