@@ -3,11 +3,15 @@ package com.gcs.game.engine.math.model20260825;
 import cn.hutool.core.util.ObjectUtil;
 import com.gcs.game.engine.slots.model.BaseSlotModel;
 import com.gcs.game.engine.slots.model.IFsLinkBonusComputer;
+import com.gcs.game.engine.slots.model.IWildPositionsChange;
+import com.gcs.game.engine.slots.model.IWildReelsChange;
 import com.gcs.game.engine.slots.utils.SlotEngineConstant;
 import com.gcs.game.engine.slots.vo.*;
 import com.gcs.game.utils.RandomUtil;
 import com.gcs.game.utils.RandomWeightUntil;
 import com.gcs.game.utils.StringUtil;
+import com.gcs.game.vo.InputInfo;
+import com.gcs.game.vo.RecoverInfo;
 
 import java.util.*;
 
@@ -245,6 +249,85 @@ public class Model20260825 extends BaseSlotModel implements IFsLinkBonusComputer
         return baseSpinResult;
     }
 
+    public SlotSpinResult spin(SlotGameFeatureVo modelFeatureBean, SlotGameLogicBean gameLogicBean, InputInfo inputFeedBean, RecoverInfo recoverInfo) {
+        SlotSpinResult baseSpinResult = null;
+        if (modelFeatureBean != null) {
+            int[][] reels = getReels(modelFeatureBean, gameLogicBean);
+            int[][] reelsWeight = getReelsWeight(modelFeatureBean, gameLogicBean);
+            if (reels == null) {
+                reels = modelFeatureBean.getSlotReels();
+            }
+            if (reelsWeight == null) {
+                reelsWeight = modelFeatureBean.getSlotReelsWeight();
+            }
+            int[] stopPosition = null;
+            if (inputFeedBean != null && inputFeedBean.getInputPosition() != null && !inputFeedBean.getInputPosition().isEmpty()) {
+                stopPosition = inputFeedBean.getInputPosition().get(0);
+            }
+            if (stopPosition == null || stopPosition.length <= 0) {
+                stopPosition = randomReelStopPosition(reelsWeight);
+            }
+            this.currentReels = reels;
+            this.currentReelsWeight = reelsWeight;
+            this.currentStopPosition = stopPosition;
+
+            boolean isSlot = true;
+            int[] displaySymbols = getDisplaySymbols(reels, stopPosition);
+            if (recoverInfo != null || inputFeedBean != null) {
+                displaySymbols = transformSwSymbols(displaySymbols, isSlot, gameLogicBean, recoverInfo, inputFeedBean);
+                baseSpinResult = computeSpin(displaySymbols, stopPosition, gameLogicBean, isSlot, recoverInfo, inputFeedBean);
+            } else {
+                displaySymbols = transformSwSymbols(displaySymbols, isSlot, gameLogicBean);
+                baseSpinResult = computeSpin(displaySymbols, stopPosition, gameLogicBean, isSlot);
+            }
+        }
+        return baseSpinResult;
+    }
+
+    protected SlotSpinResult computeSpin(int[] displaySymbols, int[] stopPosition, SlotGameLogicBean gameLogicBean, boolean isSlot, RecoverInfo recoverInfo, InputInfo inputFeedBean) {
+        SlotSpinResult baseSpinResult;
+        Map<Integer, int[]> payLinesMap = getPayLines();
+
+        int[] oldDisplaySymbols = null;
+        int[] wildReels = null;
+        if (this instanceof IWildReelsChange) {
+            oldDisplaySymbols = displaySymbols.clone();
+            if (recoverInfo != null) {
+                wildReels = ((IWildReelsChange) this).computeWildReels(gameLogicBean, displaySymbols, isSlot, recoverInfo);
+            } else {
+                wildReels = ((IWildReelsChange) this).computeWildReels(gameLogicBean, displaySymbols, isSlot);
+            }
+            int wildSymbolNo = ((IWildReelsChange) this).wildSymbolNo();
+            coverDisplaySymbolsByReels(displaySymbols, wildReels, wildSymbolNo);
+        }
+        int[] wildPositions = null;
+        if (this instanceof IWildPositionsChange) {
+            oldDisplaySymbols = displaySymbols.clone();
+            if (recoverInfo != null) {
+                wildPositions = ((IWildPositionsChange) this).computeWildPositions(gameLogicBean, displaySymbols, isSlot, recoverInfo);
+            } else {
+                wildPositions = ((IWildPositionsChange) this).computeWildPositions(gameLogicBean, displaySymbols, isSlot);
+            }
+            int wildSymbolNo = ((IWildPositionsChange) this).wildSymbolNo();
+            coverDisplaySymbolsByPositions(displaySymbols, wildPositions, wildSymbolNo);
+        }
+
+        if (recoverInfo != null || inputFeedBean != null) {
+            baseSpinResult = computeSpinResult(stopPosition, displaySymbols, payLinesMap, gameLogicBean, isSlot, recoverInfo, inputFeedBean);
+        } else {
+            baseSpinResult = computeSpinResult(stopPosition, displaySymbols, payLinesMap, gameLogicBean, isSlot);
+        }
+        if (baseSpinResult != null && wildReels != null) {
+            baseSpinResult.setSlotDisplaySymbols(oldDisplaySymbols); // symbols before over.
+            baseSpinResult.setSlotWildReels(wildReels);
+        }
+        if (baseSpinResult != null && wildPositions != null) {
+            baseSpinResult.setSlotDisplaySymbols(oldDisplaySymbols); // symbols before over.
+            baseSpinResult.setSlotWildPositions(wildPositions);
+        }
+        return baseSpinResult;
+    }
+
     private boolean shouldContinueSpin(Model20260825SpinResult result) {
         return result.getSlotPay() != 0
                 || result.isTriggerFs()
@@ -254,13 +337,7 @@ public class Model20260825 extends BaseSlotModel implements IFsLinkBonusComputer
     private int[] transformSwSymbols(int[] displaySymbols, boolean isSlot, SlotGameLogicBean gameLogicBean) {
         int[] newDisplaySymbols = displaySymbols.clone();
         if (isSlot) {
-            boolean isSwSymbol = false;
-            for (int symbol : displaySymbols) {
-                if (symbol == SW1_SYMBOL) {
-                    isSwSymbol = true;
-                    break;
-                }
-            }
+            boolean isSwSymbol = isHasSwSymbol(displaySymbols);
             //SW random SW change to SW1 or SW2 or SW3
             if (isSwSymbol) {
                 if (swRandom == null) {
@@ -282,6 +359,52 @@ public class Model20260825 extends BaseSlotModel implements IFsLinkBonusComputer
         return newDisplaySymbols;
     }
 
+    private int[] transformSwSymbols(int[] displaySymbols, boolean isSlot, SlotGameLogicBean gameLogicBean, RecoverInfo recoverInfo, InputInfo inputFeedBean) {
+        int[] newDisplaySymbols = displaySymbols.clone();
+        if (inputFeedBean != null && inputFeedBean.getSwType() != null && !inputFeedBean.getSwType().isEmpty()) {
+            if (isSlot) {
+                boolean isSwSymbol = isHasSwSymbol(displaySymbols);
+                //SW random SW change to SW1 or SW2 or SW3
+                if (isSwSymbol) {
+                    int index = 0;
+                    for (int i = 0; i < displaySymbols.length; i++) {
+                        if (displaySymbols[i] == SW1_SYMBOL) {
+                            if (index >= inputFeedBean.getSwType().size()) {
+                                index = inputFeedBean.getSwType().size() - 1;
+                            }
+                            int swIndex = inputFeedBean.getSwType().get(index);
+                            if (swIndex == 1) {
+                                newDisplaySymbols[i] = SW2_SYMBOL;
+                            } else if (swIndex == 2) {
+                                newDisplaySymbols[i] = SW3_SYMBOL;
+                            }
+                            index++;
+                        }
+                    }
+                }
+
+            }
+        } else {
+            newDisplaySymbols = transformSwSymbols(displaySymbols, isSlot, gameLogicBean);
+        }
+        return newDisplaySymbols;
+    }
+
+    /**
+     * is has sw symbol
+     *
+     * @param displaySymbols
+     * @return
+     */
+    private boolean isHasSwSymbol(int[] displaySymbols) {
+        for (int symbol : displaySymbols) {
+            if (symbol == SW1_SYMBOL) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     protected SlotSpinResult computeSpinResult(int[] stopPosition, int[] displaySymbols, Map<Integer, int[]> payLinesMap, SlotGameLogicBean gameLogicBean, boolean isSlot) {
         Model20260825SpinResult result = new Model20260825SpinResult();
         //link bonus only compute sw pays
@@ -293,6 +416,32 @@ public class Model20260825 extends BaseSlotModel implements IFsLinkBonusComputer
         hitList = filterLineHit(hitList);
         if (isSlot) {
             computeTriggerSw(gameLogicBean, result, hitList, displaySymbols);
+        }
+
+        int baseGameMultiplier = computeBaseGameMultiplier(displaySymbols, hitList, isSlot, gameLogicBean);
+        int freeSpinMultiplier = computeFreeSpinMultiplier(displaySymbols, hitList, isSlot, gameLogicBean);
+
+        result = (Model20260825SpinResult) transferHitList(result, hitList, displaySymbols, stopPosition);
+        if (isSlot) {
+            result.setBaseGameMul(baseGameMultiplier);
+        }
+        if (!isSlot) {
+            result.setFsMul(freeSpinMultiplier);
+        }
+        return result;
+    }
+
+    protected SlotSpinResult computeSpinResult(int[] stopPosition, int[] displaySymbols, Map<Integer, int[]> payLinesMap, SlotGameLogicBean gameLogicBean, boolean isSlot, RecoverInfo recoverInfo, InputInfo inputInfo) {
+        Model20260825SpinResult result = new Model20260825SpinResult();
+        //link bonus only compute sw pays
+        if (!isSlot) {
+            return computeFsSwPay(gameLogicBean);
+        }
+        List<SlotSymbolHitResult> hitList = computeSymbols(gameLogicBean, displaySymbols, payLinesMap, isSlot);
+
+        hitList = filterLineHit(hitList);
+        if (isSlot) {
+            computeTriggerSw(gameLogicBean, result, hitList, displaySymbols, recoverInfo, inputInfo);
         }
 
         int baseGameMultiplier = computeBaseGameMultiplier(displaySymbols, hitList, isSlot, gameLogicBean);
@@ -635,6 +784,20 @@ public class Model20260825 extends BaseSlotModel implements IFsLinkBonusComputer
         calculateSwPays(gameLogicBean, displaySymbols, swType, swInfo, result, hitList);
     }
 
+    private void computeTriggerSw(SlotGameLogicBean gameLogicBean, Model20260825SpinResult result, List<SlotSymbolHitResult> hitList, int[] displaySymbols, RecoverInfo recoverInfo, InputInfo inputInfo) {
+        SwSymbolInfo swInfo = analyzeSwSymbols(displaySymbols);
+        if (!swInfo.hasSwSymbol) {
+            return;
+        }
+        if (linkAwardRandom == null) {
+            linkAwardRandom = new RandomWeightUntil(LINK_BALL_AWARDS[1]);
+        }
+        // compute sw pay
+        int swType = determineSwType(swInfo);
+        // compute sw pay and multiplier
+        calculateSwPays(gameLogicBean, displaySymbols, swType, swInfo, result, hitList, recoverInfo, inputInfo);
+    }
+
 
     private int determineSwType(SwSymbolInfo info) {
         if (info.sw1Count > 0 && info.sw2Count > 0 && info.sw3Count > 0) {
@@ -726,10 +889,44 @@ public class Model20260825 extends BaseSlotModel implements IFsLinkBonusComputer
             }
         } else if (swType == SW_BC || swType == SW_AC || swType == SW_AB) {
             // AB,AC,BC
-            getSwPaysWithWeight(gameLogicBean, displaySymbols, swType, result, hitList, info, 2);
+            getSwPaysWithWeight(gameLogicBean, swType, result, hitList, info, 2);
         } else if (swType == SW_C || swType == SW_B || swType == SW_A) {
             // A,B,C
-            getSwPaysWithWeight(gameLogicBean, displaySymbols, swType, result, hitList, info, 1);
+            getSwPaysWithWeight(gameLogicBean, swType, result, hitList, info, 1);
+        }
+
+    }
+
+    /**
+     * calculate sw pays
+     */
+    private void calculateSwPays(SlotGameLogicBean gameLogicBean,
+                                 int[] displaySymbols,
+                                 int swType,
+                                 SwSymbolInfo info,
+                                 Model20260825SpinResult result, List<SlotSymbolHitResult> hitList, RecoverInfo recoverInfo, InputInfo inputInfo) {
+        // sw ABC
+        if (swType == SW_ABC) {
+            int randomIndex = -1;
+            // ABC
+            if (inputInfo != null && inputInfo.getSwTriggerIndex() != null) {
+                randomIndex = inputInfo.getSwTriggerIndex();
+            } else {
+                RandomWeightUntil random = new RandomWeightUntil(getSw3Weight(gameLogicBean.getPercentage()));
+                randomIndex = random.getRandomResult();
+            }
+            if (randomIndex == swType) {
+                computeSwPay(info.swDisplaySymbols, swType, result, gameLogicBean);
+                // add trigger result
+                addSwTriggerResult(hitList, info);
+                result.setSwType(swType);
+            }
+        } else if (swType == SW_BC || swType == SW_AC || swType == SW_AB) {
+            // AB,AC,BC
+            getSwPaysWithWeight(gameLogicBean, swType, result, hitList, info, 2, recoverInfo, inputInfo);
+        } else if (swType == SW_C || swType == SW_B || swType == SW_A) {
+            // A,B,C
+            getSwPaysWithWeight(gameLogicBean, swType, result, hitList, info, 1, recoverInfo, inputInfo);
         }
 
     }
@@ -738,7 +935,6 @@ public class Model20260825 extends BaseSlotModel implements IFsLinkBonusComputer
      * get sw Pays weight
      */
     private void getSwPaysWithWeight(SlotGameLogicBean gameLogicBean,
-                                     int[] displaySymbols,
                                      int swType,
                                      Model20260825SpinResult result,
                                      List<SlotSymbolHitResult> hitList, SwSymbolInfo info, int swLevel) {
@@ -755,6 +951,38 @@ public class Model20260825 extends BaseSlotModel implements IFsLinkBonusComputer
         //random trigger A,B,C
         RandomWeightUntil random = new RandomWeightUntil(weight);
         if (random.getRandomResult() == triggerIndex) {
+            computeSwPay(info.swDisplaySymbols, swType, result, gameLogicBean);
+            // add trigger result
+            addSwTriggerResult(hitList, info);
+            result.setSwType(swType);
+        }
+    }
+
+    private void getSwPaysWithWeight(SlotGameLogicBean gameLogicBean,
+                                     int swType,
+                                     Model20260825SpinResult result,
+                                     List<SlotSymbolHitResult> hitList, SwSymbolInfo info,
+                                     int swLevel, RecoverInfo recoverInfo, InputInfo inputInfo) {
+        int[] weight;
+        int triggerIndex;
+
+        if (swLevel == 1) {
+            weight = getSw1Weight(gameLogicBean.getPercentage());
+            triggerIndex = 1;
+        } else {
+            weight = getSw2Weight(gameLogicBean.getPercentage());
+            triggerIndex = 3;
+        }
+        //random trigger A,B,C
+        int randomIndex = -1;
+        //TODO Recover
+        if (inputInfo != null && inputInfo.getSwTriggerIndex() != null) {
+            randomIndex = inputInfo.getSwTriggerIndex();
+        } else {
+            RandomWeightUntil random = new RandomWeightUntil(weight);
+            randomIndex = random.getRandomResult();
+        }
+        if (randomIndex == triggerIndex) {
             computeSwPay(info.swDisplaySymbols, swType, result, gameLogicBean);
             // add trigger result
             addSwTriggerResult(hitList, info);
