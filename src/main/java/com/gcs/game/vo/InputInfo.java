@@ -23,4 +23,8 @@ public class InputInfo {
 
     private Integer scTriggerIndex;
 
+    private List<Integer> swType;
+
+    private Integer swTriggerIndex;
+
 }

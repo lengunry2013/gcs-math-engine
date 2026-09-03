@@ -173,8 +173,8 @@ public class Model20260825 extends BaseSlotModel implements IFsLinkBonusComputer
             case 8807:
                 sw1TriggerWeight = new int[]{970, 30};
                 break;
-            case 9025:
-                sw1TriggerWeight = new int[]{968, 32};
+            case 9053:
+                sw1TriggerWeight = new int[]{970, 30};
                 break;
             default:
                 break;
@@ -188,8 +188,8 @@ public class Model20260825 extends BaseSlotModel implements IFsLinkBonusComputer
             case 8807:
                 sw2TriggerWeight = new int[]{923, 0, 0, 77};
                 break;
-            case 9025:
-                sw2TriggerWeight = new int[]{920, 0, 0, 80};
+            case 9053:
+                sw2TriggerWeight = new int[]{925, 0, 0, 75};
                 break;
             default:
                 break;
@@ -203,7 +203,7 @@ public class Model20260825 extends BaseSlotModel implements IFsLinkBonusComputer
             case 8807:
                 sw3TriggerWeight = new int[]{755, 0, 0, 0, 0, 0, 0, 245};
                 break;
-            case 9025:
+            case 9053:
                 sw3TriggerWeight = new int[]{750, 0, 0, 0, 0, 0, 0, 250};
                 break;
             default:
@@ -501,9 +501,6 @@ public class Model20260825 extends BaseSlotModel implements IFsLinkBonusComputer
         List<Boolean> isGridTriggerFs = new ArrayList<>(spinResult.getIsGridTriggerFs());
         List<Integer> gridFsLeftCounts = new ArrayList<>(spinResult.getGridFsLeftCounts());
         boolean isTriggerFs = false;
-        System.out.println("gridFsLeftCounts: " + gridFsLeftCounts);
-        System.out.println("isFullBalls: " + isFullBalls);
-        System.out.println("isTriggerFs: " + isTriggerFs);
         if (ObjectUtil.isNotEmpty(swPayList)) {
             colIcons = resetColIcons(swPayList);
             int swMul = 1;
@@ -667,10 +664,10 @@ public class Model20260825 extends BaseSlotModel implements IFsLinkBonusComputer
             }
         }
         if (containsSwA(swType) && !swPositions.isEmpty()) {
-            int swMulIndex = RandomUtil.getRandomInt(swPositions.size());
-            int swPosition = swPositions.get(swMulIndex);
-            swPays[swPosition] *= swMul;
-            swMulti[swPosition] = swMul;
+            for (int position : swPositions) {
+                swPays[position] *= swMul;
+                swMulti[position] = swMul;
+            }
         }
         return currentBalls;
     }
@@ -994,27 +991,11 @@ public class Model20260825 extends BaseSlotModel implements IFsLinkBonusComputer
         long[] swPays = new long[swDisplaySymbols.length];
         int[] swMultis = new int[swDisplaySymbols.length];
         Arrays.fill(swMultis, 1);
-        int swMul = 1;
-        if (containsSwA(swType)) {
-            RandomWeightUntil randomWeightUntil = new RandomWeightUntil(MULTI_WEIGHT[0], MULTI_WEIGHT[1]);
-            swMul = randomWeightUntil.getRandomResult();
-        }
-        List<Integer> swPositions = new ArrayList<>();
         for (int i = 0; i < swDisplaySymbols.length; i++) {
             if (swDisplaySymbols[i] > 0) {
                 int randomIndex = linkAwardRandom.getRandomResult();
                 swPays[i] = LINK_BALL_AWARDS[0][randomIndex] * gameLogicBean.getSumBetCredit();
-                if (containsSwA(swType)) {
-                    swPositions.add(i);
-                }
             }
-        }
-        //SW prizes is selected at random and multiplied.
-        if (containsSwA(swType) && !swPositions.isEmpty()) {
-            int randomMulIndex = RandomUtil.getRandomInt(swPositions.size());
-            int swPosition = swPositions.get(randomMulIndex);
-            swPays[swPosition] *= swMul;
-            swMultis[swPosition] = swMul;
         }
         //base game init entry fs parameter
         List<long[]> swPaysList = new ArrayList<>();
