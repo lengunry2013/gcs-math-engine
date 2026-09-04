@@ -1,9 +1,12 @@
 package com.gcs.game.engine.slots.utils;
 
+import cn.hutool.core.util.ObjectUtil;
 import com.gcs.game.engine.GameModelFactory;
 import com.gcs.game.engine.common.cache.GameMathCacheStorage;
 import com.gcs.game.engine.math.model20260625.Model20260625;
 import com.gcs.game.engine.math.model20260625.Model20260625SpinResult;
+import com.gcs.game.engine.math.model20260825.Model20260825;
+import com.gcs.game.engine.math.model20260825.Model20260825SpinResult;
 import com.gcs.game.engine.slots.bonus.BaseBonus;
 import com.gcs.game.engine.slots.model.IFsLinkBonusComputer;
 import com.gcs.game.engine.slots.model.IFsSceneComputer;
@@ -232,7 +235,11 @@ public class SlotEngineUtil {
                         //1:normal spin，2:saver loss， 3:saver win
                         wagerType = computeWagerSaver(remainBalance, gameLogicCache, model, recoverInfo);
                         if (wagerType == SlotEngineConstant.SAVER_LOSS) {
-                            setRecoverData(gameLogicCache, wagerType);
+                            if (recoverInfo != null) {
+                                gameLogicCache.getSlotSpinResult().setRecoverData(recoverInfo.getRecoverData());
+                            } else {
+                                setRecoverData(gameLogicCache, wagerType);
+                            }
                             gameLogicCache.getSlotSpinResult().setWagerType(wagerType);
                             return gameLogicCache;
                         } else if (wagerType == SlotEngineConstant.SAVER_WIN) {
@@ -268,7 +275,11 @@ public class SlotEngineUtil {
                         long winCredit = baseSpinResult.getSlotPay();
                         long winCent = winCredit * denom;
 
-                        setRecoverData(gameLogicCache, wagerType);
+                        if (recoverInfo != null) {
+                            gameLogicCache.getSlotSpinResult().setRecoverData(recoverInfo.getRecoverData());
+                        } else {
+                            setRecoverData(gameLogicCache, wagerType);
+                        }
                         gameLogicCache.setSumWinCredit(winCredit);
                         gameLogicCache.setSumWinBalance(winCent);
                         gameLogicCache.setPayForCurrentStep(winCredit);
@@ -307,10 +318,37 @@ public class SlotEngineUtil {
                     log.error("BaseGame spin recover data error!");
                     throw new InvalidGameStateException();
                 }
+            } else if (slotSpinResult instanceof Model20260825SpinResult) {
+                String recoverData = slotSpinResult.getRecoverData();
+                String[] recoverDataStr = recoverData.split("a");
+                if (recoverDataStr.length > 1) {
+                    String firstPart = recoverDataStr[0];
+                    long secondLong = Long.parseUnsignedLong(recoverDataStr[1]);
+                    // 直接使用 compressToLong 追加 wagerType（4位）
+                    long finalSecondPartLong = CompressUtil.convertTo4Bit(secondLong, wagerType);
+                    slotSpinResult.setRecoverData(firstPart + "a" + Long.toUnsignedString(finalSecondPartLong));
+                } else {
+                    log.error("BaseGame spin recover data error!");
+                    throw new InvalidGameStateException();
+                }
             } else {
-                long result = CompressUtil.compressToLong(slotSpinResult.getSlotReelStopPosition(), slotSpinResult.getBaseGameMul());
-                long recoverData = CompressUtil.compressToLong(result, wagerType);
-                slotSpinResult.setRecoverData(String.valueOf(recoverData));
+                if (gameLogicCache.getMmID().equalsIgnoreCase("20260825")) {
+                    long firstPart = CompressUtil.compressIntArrToLong(slotSpinResult.getSlotReelStopPosition(), new int[5]);
+                    long finalFirstPart = CompressUtil.convertTo4Bit(firstPart, 0);
+                    long secondPart = CompressUtil.compressIntArrTo4BitLong(new int[15]);
+                    long finalSecondPart = CompressUtil.convertTo4Bit(secondPart, wagerType);
+                    slotSpinResult.setRecoverData(Long.toUnsignedString(finalFirstPart) + "a" + Long.toUnsignedString(finalSecondPart));
+                } else if (gameLogicCache.getMmID().equalsIgnoreCase("20260625")) {
+                    long firstPart = CompressUtil.compressToLong(slotSpinResult.getSlotReelStopPosition(), gameLogicCache.getBaseReelsType());
+                    long secondPart = CompressUtil.compressToLong(new int[5], 0);
+                    // 直接使用 compressToLong 追加 wagerType（8位）
+                    long finalSecondPartLong = CompressUtil.compressToLong(secondPart, wagerType);
+                    slotSpinResult.setRecoverData(Long.toUnsignedString(firstPart) + "a" + Long.toUnsignedString(finalSecondPartLong));
+                } else {
+                    long result = CompressUtil.compressToLong(slotSpinResult.getSlotReelStopPosition(), slotSpinResult.getBaseGameMul());
+                    long recoverData = CompressUtil.compressToLong(result, wagerType);
+                    slotSpinResult.setRecoverData(String.valueOf(recoverData));
+                }
             }
         } else {
             log.error("BaseGame spin data error!");
@@ -328,6 +366,19 @@ public class SlotEngineUtil {
                     String decodedSecondPart = recoverDataStr[1];
                     long decodedSecondLong = Long.parseUnsignedLong(decodedSecondPart);
                     wagerType = CompressUtil.decompressWagerType(decodedSecondLong);
+                }
+            } else if (model instanceof Model20260825) {
+                String recoverData = recoverInfo.getRecoverData();
+                if (ObjectUtil.isNotEmpty(recoverData)) {
+                    String[] recoverStr = recoverData.split("a");
+                    if (recoverStr.length > 1) {
+                        String secondPart = recoverStr[1];
+                        long secondCompressed = Long.parseUnsignedLong(secondPart);
+                        int[] swPaysIndex = new int[15];
+                        int[] decodeWagerType = new int[1];
+                        CompressUtil.decompressSecondLong(secondCompressed, swPaysIndex, decodeWagerType);
+                        wagerType = decodeWagerType[0];
+                    }
                 }
             } else {
                 wagerType = CompressUtil.decompressWagerType(Long.parseLong(recoverInfo.getRecoverData()));
@@ -352,6 +403,22 @@ public class SlotEngineUtil {
                 String firstPart = recoverData.split("a")[0];
                 long firstCompressed = Long.parseUnsignedLong(firstPart);
                 CompressUtil.decompressFrom2Long(firstCompressed, position, reelsType);
+                List<int[]> inputPositions = new ArrayList<>();
+                inputPositions.add(position);
+                if (input != null) {
+                    input.setInputPosition(inputPositions);
+                } else {
+                    input = new InputInfo();
+                    input.setInputPosition(inputPositions);
+                }
+            } else if (model instanceof Model20260825) {
+                int[] position = new int[reelCount];
+                int[] swSymbols = new int[reelCount];
+                int[] swTriggerIndex = new int[1];
+                String recoverData = recoverInfo.getRecoverData();
+                String firstPart = recoverData.split("a")[0];
+                long firstCompressed = Long.parseUnsignedLong(firstPart);
+                CompressUtil.decompressFirstLong(firstCompressed, position, swSymbols, swTriggerIndex);
                 List<int[]> inputPositions = new ArrayList<>();
                 inputPositions.add(position);
                 if (input != null) {
@@ -855,7 +922,18 @@ public class SlotEngineUtil {
 
     private static InputInfo slotFsRecover(SlotGameLogicBean gameLogicCache, BaseSlotModel model, InputInfo input, RecoverInfo recoverInfo, int reelCount) {
         if (recoverInfo != null) {
-            if (model instanceof Model20260625) {
+            if (model instanceof Model20260825) {
+                //This math special is not need position
+                int[] fsPosition = {1, 2, 3, 4, 5};
+                List<int[]> inputPositions = new ArrayList<>();
+                inputPositions.add(fsPosition);
+                if (input != null) {
+                    input.setInputPosition(inputPositions);
+                } else {
+                    input = new InputInfo();
+                    input.setInputPosition(inputPositions);
+                }
+            } else if (model instanceof Model20260625) {
                 int[] fsPosition = new int[reelCount];
                 int[] scIndex = new int[30];
                 CompressUtil.decompressFromString(recoverInfo.getRecoverData(), fsPosition, scIndex);
