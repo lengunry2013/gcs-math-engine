@@ -589,7 +589,6 @@ public class Model20260825 extends BaseSlotModel implements IFsLinkBonusComputer
             //set fs recover data pay need 6Long
             int len = swPayList.get(0).length * 2;
             int[] swPaysIndex = new int[len];
-            int[] swMultiData = new int[len];
             int[] colIconData = new int[len];
 
             int destPos = 0;
@@ -609,7 +608,6 @@ public class Model20260825 extends BaseSlotModel implements IFsLinkBonusComputer
                     destPos += swMulti.length;
                 }
                 //recover swMulti data
-                System.arraycopy(swMulti, 0, swMultiData, destPos, swMulti.length);
                 //contain SW_C compute Collect
                 long colReward = 0;
                 if (swType == SW_C || swType == SW_AC || swType == SW_BC || swType == SW_ABC) {
@@ -652,6 +650,7 @@ public class Model20260825 extends BaseSlotModel implements IFsLinkBonusComputer
                 }
                 index++;
             }
+            result.setFsMul(swMul);
             result.setSwType(swType);
             result.setSwMultis(swMultis);
             result.setLinkBonusSwPays(swPayList);
@@ -667,14 +666,14 @@ public class Model20260825 extends BaseSlotModel implements IFsLinkBonusComputer
                 result.setTriggerFsCounts(RESPIN_TIMES);
             }
             //save fs recover data
-            String recoverData = CompressUtil.compressTo6LongString(swPaysIndex, swMultiData, colIconData);
+            String recoverData = CompressUtil.compressTo4LongString(swPaysIndex, colIconData, swMul);
             result.setRecoverData(recoverData);
         }
         return result;
     }
 
     /**
-     * compute each SW fs result
+     * recover each SW fs result
      *
      * @param gameLogicBean
      * @return
@@ -683,9 +682,9 @@ public class Model20260825 extends BaseSlotModel implements IFsLinkBonusComputer
         if (recoverInfo != null) {
             String recoverData = recoverInfo.getRecoverData();
             int[] swPaysIndexData = new int[30];
-            int[] swMultiData = new int[30];
             int[] colIconData = new int[30];
-            CompressUtil.decompressFromStringSimple(recoverData, swPaysIndexData, swMultiData, colIconData);
+            int[] fsSwMul = new int[1];
+            CompressUtil.decompressFromStringSimple(recoverData, swPaysIndexData, colIconData, fsSwMul);
 
             Model20260825SpinResult result = new Model20260825SpinResult();
             //The initial fs uses the spinResult of baseGame
@@ -706,6 +705,7 @@ public class Model20260825 extends BaseSlotModel implements IFsLinkBonusComputer
             List<Integer> gridFsLeftCounts = new ArrayList<>(spinResult.getGridFsLeftCounts());
             boolean isTriggerFs = false;
             if (ObjectUtil.isNotEmpty(swPayList)) {
+                int swMul = fsSwMul[0];
                 colIcons = resetColIcons(swPayList);
                 int index = 0;
 
@@ -728,10 +728,9 @@ public class Model20260825 extends BaseSlotModel implements IFsLinkBonusComputer
                     int[] swPaysIndex = new int[swPays.length];
                     int[] colIcon = new int[swPays.length];
                     //recover swMulti data
-                    System.arraycopy(swMultiData, destPos, swMulti, 0, swMulti.length);
                     System.arraycopy(swPaysIndexData, destPos, swPaysIndex, 0, swPaysIndex.length);
                     System.arraycopy(colIconData, destPos, colIcon, 0, colIcon.length);
-                    int newBalls = randomLinkBalls(currentBalls, swType, swPays, swMulti, gameLogicBean, swPaysIndex);
+                    int newBalls = recoverLinkBalls(currentBalls, swPays, swMulti, gameLogicBean, swPaysIndex, swMul);
                     //contain SW_C compute Collect
                     long colReward = 0;
                     if (swType == SW_C || swType == SW_AC || swType == SW_BC || swType == SW_ABC) {
@@ -772,6 +771,7 @@ public class Model20260825 extends BaseSlotModel implements IFsLinkBonusComputer
                     index++;
                 }
                 result.setSwType(swType);
+                result.setFsMul(swMul);
                 result.setSwMultis(swMultis);
                 result.setLinkBonusSwPays(swPayList);
                 result.setColIcons(colIcons);
@@ -906,15 +906,15 @@ public class Model20260825 extends BaseSlotModel implements IFsLinkBonusComputer
     /*
        Fs compute recover data
      */
-    private int randomLinkBalls(int currentBalls, int swType, long[] swPays, int[] swMulti, SlotGameLogicBean gameLogicBean, int[] swPaysIndex) {
+    private int recoverLinkBalls(int currentBalls, long[] swPays, int[] swMulti, SlotGameLogicBean gameLogicBean, int[] swPaysIndex, int swMul) {
         for (int i = 0; i < swPays.length; i++) {
             if (swPays[i] == 0) {
                 int randomPayIndex = swPaysIndex[i];
-                int swMul = swMulti[i];
                 if (randomPayIndex > 0) {
                     currentBalls++;
                     swPays[i] = LINK_BALL_AWARDS[0][randomPayIndex - 1] * gameLogicBean.getSumBetCredit();
                     swPays[i] *= swMul;
+                    swMulti[i] = swMul;
                 }
             }
         }

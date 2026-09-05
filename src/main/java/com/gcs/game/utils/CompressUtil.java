@@ -375,22 +375,20 @@ public class CompressUtil {
         System.out.println("decodeWagerType=" + Arrays.toString(decodeWagerType));
         //Fs
         int[] fsSwPaysIndex = new int[30];
-        fsSwPaysIndex[1] = 1;
-        fsSwPaysIndex[10] = 5;
-        int[] fsSwMultiData = new int[30];
-        fsSwMultiData[1] = 2;
-        fsSwMultiData[10] = 3;
+        fsSwPaysIndex[1] = 2;
+        fsSwPaysIndex[10] = 10;
         int[] fsColIconData = new int[30];
         fsColIconData[1] = 1;
-        String encodeStr = compressTo6LongString(fsSwPaysIndex, fsSwMultiData, fsColIconData);
+        int swMul = 3;
+        String encodeStr = compressTo4LongString(fsSwPaysIndex, fsColIconData, swMul);
         int[] decodeFsSwPaysIndex = new int[30];
-        int[] decodeFsSwMultiData = new int[30];
+        int[] decodeFsSwMul = new int[1];
         int[] decodeFsColIconData = new int[30];
-        decompressFromStringSimple(encodeStr, decodeFsSwPaysIndex, decodeFsSwMultiData, decodeFsColIconData);
+        decompressFromStringSimple(encodeStr, decodeFsSwPaysIndex, decodeFsColIconData, decodeFsSwMul);
         System.out.println("原始 fsSwPaysIndex: " + Arrays.toString(fsSwPaysIndex));
         System.out.println("解密 fsSwPaysIndex=" + Arrays.toString(decodeFsSwPaysIndex));
-        System.out.println("原始 fsSwMultiData: " + Arrays.toString(fsSwMultiData));
-        System.out.println("解码 fsSwMultiData: " + Arrays.toString(decodeFsSwMultiData));
+        System.out.println("原始 fsSwMul: " + swMul);
+        System.out.println("解码 fsSwMul: " + Arrays.toString(decodeFsSwMul));
         System.out.println("原始 fsColIconData: " + Arrays.toString(fsColIconData));
         System.out.println("解码 fsColIconData: " + Arrays.toString(decodeFsColIconData));
 
@@ -488,84 +486,8 @@ public class CompressUtil {
         return (int) ((source >> shift) & MASK_8);
     }
 
-
-    public static long[] compressTo6Longs(int[] swPaysIndex, int[] swMultiData, int[] colIconData) {
-        // 验证长度
-        if (swPaysIndex.length != 30) {
-            throw new IllegalArgumentException("swPaysIndex长度必须为30");
-        }
-        if (swMultiData.length != 30) {
-            throw new IllegalArgumentException("swMultiData长度必须为30");
-        }
-        if (colIconData.length != 30) {
-            throw new IllegalArgumentException("colIconData长度必须为30");
-        }
-        // 验证范围：0-15
-        for (int value : swPaysIndex) {
-            if (value < 0 || value > 15) {
-                throw new IllegalArgumentException("swPaysIndex值必须在0-15: " + value);
-            }
-        }
-        for (int value : swMultiData) {
-            if (value < 0 || value > 15) {
-                throw new IllegalArgumentException("swMultiData值必须在0-15: " + value);
-            }
-        }
-        for (int value : colIconData) {
-            if (value < 0 || value > 15) {
-                throw new IllegalArgumentException("colIconData值必须在0-15: " + value);
-            }
-        }
-
-        long[] result = new long[6];
-        int currentLong = 0;
-        int bitOffset = 0;
-
-        // 1. 压缩 swPaysIndex (30个值，每个4位)
-        for (int i = 0; i < swPaysIndex.length; i++) {
-            int value = swPaysIndex[i];
-            result[currentLong] = (result[currentLong] << 4) | (value & 0x0F);
-            bitOffset += 4;
-            if (bitOffset == 64) {
-                currentLong++;
-                bitOffset = 0;
-            }
-        }
-
-        // 如果第一个long还有剩余位（实际上30*4=120位，需要2个long，第一个long刚好64位满）
-        // 这里不需要额外处理，因为30*4=120，正好2个long（64+56），第二个long还有8位空闲
-
-        // 2. 压缩 swMultiData (30个值，每个4位)
-        for (int i = 0; i < swMultiData.length; i++) {
-            int value = swMultiData[i];
-            result[currentLong] = (result[currentLong] << 4) | (value & 0x0F);
-            bitOffset += 4;
-            if (bitOffset == 64) {
-                currentLong++;
-                bitOffset = 0;
-            }
-        }
-
-        // 3. 压缩 colIconData (30个值，每个4位)
-        for (int i = 0; i < swMultiData.length; i++) {
-            int value = colIconData[i];
-            result[currentLong] = (result[currentLong] << 4) | (value & 0x0F);
-            bitOffset += 4;
-            if (bitOffset == 64) {
-                currentLong++;
-                bitOffset = 0;
-            }
-        }
-
-        // 如果最后一个long有剩余位，左移补0
-        if (bitOffset > 0 && currentLong < 6) {
-            result[currentLong] = result[currentLong] << (64 - bitOffset);
-        }
-        return result;
-    }
-
-    public static String compressTo6LongString(int[] swPaysIndex, int[] swMultiData, int[] colIconData) {
-        long[] compressed = compressTo6Longs(swPaysIndex, swMultiData, colIconData);
+    public static String compressTo4LongString(int[] swPaysIndex, int[] colIconData, int swMul) {
+        long[] compressed = compressTo4Longs(swPaysIndex, colIconData, swMul);
         StringBuilder result = new StringBuilder();
         for (int i = 0; i < compressed.length; i++) {
             if (i > 0) {
@@ -576,37 +498,129 @@ public class CompressUtil {
         return result.toString();
     }
 
-    public static void decompressFromStringSimple(String str, int[] swPaysIndex, int[] swMultiData, int[] colIconData) {
-        String[] parts = str.split("a");
-        if (parts.length != 6) {
-            throw new IllegalArgumentException("字符串必须包含6个Long值");
+    private static long[] compressTo4Longs(int[] swPaysIndex, int[] colIconData, int swMul) {
+        // 验证长度
+        if (swPaysIndex.length != 30) {
+            throw new IllegalArgumentException("swPaysIndex长度必须为30");
+        }
+        if (colIconData.length != 30) {
+            throw new IllegalArgumentException("colIconData长度必须为30");
         }
 
-        long[] compressed = new long[6];
-        for (int i = 0; i < 6; i++) {
-            compressed[i] = Long.parseUnsignedLong(parts[i]);
+        // 验证范围：0-15
+        for (int value : swPaysIndex) {
+            if (value < 0 || value > 15) {
+                throw new IllegalArgumentException("swPaysIndex值必须在0-15: " + value);
+            }
+        }
+        for (int value : colIconData) {
+            if (value < 0 || value > 15) {
+                throw new IllegalArgumentException("colIconData值必须在0-15: " + value);
+            }
+        }
+        if (swMul < 0 || swMul > 15) {
+            throw new IllegalArgumentException("swMul值必须在0-15: " + swMul);
         }
 
-        // 将所有数据合并到一个Long数组中
-        long[] allData = new long[6];
-        System.arraycopy(compressed, 0, allData, 0, 6);
+        long[] result = new long[4];
+        int currentLong = 0;
+        int bitOffset = 0;
 
-        // 从6个Long中提取90个4位值
-        int[] values = new int[90];
-        int bitPos = 0;
-        for (int i = 0; i < 90; i++) {
-            int longIndex = bitPos / 64;
-            int bitOffset = bitPos % 64;
-            values[i] = (int) ((allData[longIndex] >> (64 - bitOffset - 4)) & 0x0F);
-            bitPos += 4;
+        // 1. 压缩 swPaysIndex (30个值，每个4位) = 120位
+        for (int i = 0; i < swPaysIndex.length; i++) {
+            int value = swPaysIndex[i];
+            result[currentLong] = (result[currentLong] << 4) | (value & 0x0F);
+            bitOffset += 4;
+            if (bitOffset == 64) {
+                currentLong++;
+                bitOffset = 0;
+            }
         }
 
-        int len = swPaysIndex.length;
-        // 分配到3个数组
-        System.arraycopy(values, 0, swPaysIndex, 0, len);
-        System.arraycopy(values, len, swMultiData, 0, len);
-        System.arraycopy(values, len * 2, colIconData, 0, len);
+        // 2. 压缩 colIconData (30个值，每个4位) = 120位
+        for (int i = 0; i < colIconData.length; i++) {
+            int value = colIconData[i];
+            result[currentLong] = (result[currentLong] << 4) | (value & 0x0F);
+            bitOffset += 4;
+            if (bitOffset == 64) {
+                currentLong++;
+                bitOffset = 0;
+            }
+        }
+
+        // 3. 压缩 swMul (1个值，4位)
+        result[currentLong] = (result[currentLong] << 4) | (swMul & 0x0F);
+        bitOffset += 4;
+
+        // 如果当前long还有剩余位，左移补0
+        if (bitOffset > 0 && currentLong < 4) {
+            result[currentLong] = result[currentLong] << (64 - bitOffset);
+        }
+        return result;
     }
 
+    public static void decompressFromStringSimple(String data, int[] swPaysIndex, int[] colIconData, int[] swMul) {
+        if (data == null || data.isEmpty()) {
+            throw new IllegalArgumentException("数据不能为空");
+        }
+
+        String[] parts = data.split("a");
+        if (parts.length != 4) {
+            throw new IllegalArgumentException("数据格式错误，需要4个Long值，实际为: " + parts.length);
+        }
+
+        long[] compressed = new long[4];
+        for (int i = 0; i < 4; i++) {
+            try {
+                compressed[i] = Long.parseUnsignedLong(parts[i]);
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("第" + i + "个值不是有效的无符号Long: " + parts[i]);
+            }
+        }
+        decompressFrom4Longs(compressed, swPaysIndex, colIconData, swMul);
+    }
+
+    /**
+     * 从4个Long中解压出 swPaysIndex、colIconData 和 swMul
+     *
+     * @param compressed  压缩的4个Long数组
+     * @param swPaysIndex 输出：30个值的数组
+     * @param colIconData 输出：30个值的数组
+     * @param swMul       输出：1个值的数组
+     */
+    private static void decompressFrom4Longs(long[] compressed, int[] swPaysIndex, int[] colIconData, int[] swMul) {
+        if (compressed.length != 4) {
+            throw new IllegalArgumentException("compressed长度必须为4");
+        }
+        // 总共有 30 + 30 + 1 = 61 个4位值
+        int totalValues = 61;
+        int[] allValues = new int[totalValues];
+        int bitPos = 0; // 当前位位置（从0开始）
+
+        for (int i = 0; i < totalValues; i++) {
+            int longIndex = bitPos / 64;        // 当前在哪个Long
+            int bitOffset = bitPos % 64;        // 在当前Long中的位偏移
+            int shift = 64 - bitOffset - 4;     // 需要右移的位数
+
+            if (shift >= 0) {
+                // 在当前Long中直接读取
+                allValues[i] = (int) ((compressed[longIndex] >> shift) & 0x0F);
+            } else {
+                // 需要跨Long读取
+                int remainingBits = 64 - bitOffset;           // 当前Long剩余位数
+                long firstPart = compressed[longIndex] & ((1L << remainingBits) - 1);
+                longIndex++;
+                int needBits = 4 - remainingBits;              // 还需要从下一个Long读取的位数
+                long secondPart = compressed[longIndex] >> (64 - needBits);
+                allValues[i] = (int) ((firstPart << needBits) | secondPart);
+            }
+            bitPos += 4; // 移动到下一个4位值
+        }
+
+        // 分配到各个数组
+        System.arraycopy(allValues, 0, swPaysIndex, 0, 30);
+        System.arraycopy(allValues, 30, colIconData, 0, 30);
+        swMul[0] = allValues[60];
+    }
 
 }
