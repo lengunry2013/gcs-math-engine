@@ -393,6 +393,7 @@ public class Model20260507 extends BaseSlotModel {
             unlockedLevel = getActiveLevel(activeSwCount);
             if (activeSwCount > swCount) {
                 respinTimes = RESET_SPIN_COUNT;
+                //unlockLevel reset compute active SW count
                 activeSwCount = countActiveSwInUnlockedArea(linkBonusDisplaySymbol, unlockedLevel);
                 swCount = activeSwCount;
             } else {
