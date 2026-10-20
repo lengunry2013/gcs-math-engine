@@ -26,6 +26,7 @@ import com.gcs.game.engine.math.model20260825.Model20260825;
 import com.gcs.game.engine.math.model20260825.Model20260825Bonus;
 import com.gcs.game.engine.math.model20260903.Model20260903;
 import com.gcs.game.engine.math.model20260923.Model20260923;
+import com.gcs.game.engine.math.model20261007.Model20261007;
 import com.gcs.game.engine.math.model5070530.Model5070530;
 import com.gcs.game.engine.math.model6060630.Model6060630;
 import com.gcs.game.engine.math.model6060630.Model6060630Bonus;
@@ -220,6 +221,9 @@ public class GameModelFactory {
                 break;
             case "20260923":
                 model = new Model20260923();
+                break;
+            case "20261007":
+                model = new Model20261007();
                 break;
             default:
                 break;

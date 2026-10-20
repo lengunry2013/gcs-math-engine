@@ -17,7 +17,7 @@ import com.gcs.game.vo.RecoverInfo;
 import java.util.*;
 
 /**
- * GoldRing Circus Game
+ * BigDaddy Golden Fortune
  */
 public class Model20260825 extends BaseSlotModel implements IFsLinkBonusComputer {
 
