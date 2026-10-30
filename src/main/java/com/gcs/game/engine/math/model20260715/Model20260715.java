@@ -409,7 +409,7 @@ public class Model20260715 extends BaseKenoModel {
         int[] allNumbers = getAllRandomDigits();
         List<Integer> randomNumbers = getRandomNumbers(allNumbers, getRandomCount());
         List<Integer> leftNumbers = getLeftNumbers(allNumbers, kenoResult.getSelectNumbers());
-        List<List<Integer>> additionsSetsNumbers = gameLogicCache.getKenoResult().getAdditionsSetsNumbers();
+        List<List<Integer>> additionsSetsNumbers = new ArrayList<>(gameLogicCache.getKenoResult().getAdditionsSetsNumbers());
 
         int totalMatchCount = 0;
         int fsTotalTimes = 0;
